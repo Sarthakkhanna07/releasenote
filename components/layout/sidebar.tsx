@@ -87,6 +87,12 @@ export const Sidebar = (): JSX.Element | null => {
       path: "/dashboard/ai-context",
       active: isActive("/dashboard/ai-context"),
     },
+    {
+      icon: <LifeBuoyIcon className="w-6 h-6" />, // You can change this icon if you prefer another
+      label: "Integrations",
+      path: "/dashboard/integrations",
+      active: isActive("/dashboard/integrations"),
+    },
   ]
 
   // Footer menu items

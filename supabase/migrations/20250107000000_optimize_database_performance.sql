@@ -6,6 +6,9 @@
 -- 1. ADVANCED INDEXING STRATEGY
 -- ======================================
 
+-- Add is_public column to support public/private release notes and related indexes
+ALTER TABLE release_notes ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT false;
+
 -- Release Notes Performance Indexes
 -- Primary query pattern: organization_id + status + created_at (filtering and sorting)
 CREATE INDEX IF NOT EXISTS idx_release_notes_org_status_created 

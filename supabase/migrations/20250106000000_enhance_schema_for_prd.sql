@@ -79,6 +79,85 @@ CREATE TABLE IF NOT EXISTS user_oauth_states (
   UNIQUE(user_id, provider, state)
 );
 
+CREATE TABLE IF NOT EXISTS public.release_note_versions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  release_note_id uuid NOT NULL,
+  version_number integer NOT NULL,
+  title text NOT NULL,
+  content text NULL,
+  content_markdown text NULL,
+  content_html text NULL,
+  content_json jsonb NULL,
+  created_by uuid NULL,
+  change_summary text NULL,
+  is_auto_save boolean NULL DEFAULT false,
+  CONSTRAINT release_note_versions_pkey PRIMARY KEY (id),
+  CONSTRAINT release_note_versions_release_note_id_version_number_key UNIQUE (release_note_id, version_number),
+  CONSTRAINT release_note_versions_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users (id),
+  CONSTRAINT release_note_versions_release_note_id_fkey FOREIGN KEY (release_note_id) REFERENCES release_notes (id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS release_note_versions_release_note_id_idx ON public.release_note_versions USING btree (release_note_id) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS release_note_versions_version_number_idx ON public.release_note_versions USING btree (release_note_id, version_number) TABLESPACE pg_default;
+
+CREATE TABLE IF NOT EXISTS public.release_note_publishing_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  release_note_id uuid NOT NULL,
+  action text NOT NULL,
+  performed_by uuid NULL,
+  scheduled_for timestamp with time zone NULL,
+  notes text NULL,
+  metadata jsonb NULL,
+  CONSTRAINT release_note_publishing_history_pkey PRIMARY KEY (id),
+  CONSTRAINT release_note_publishing_history_performed_by_fkey FOREIGN KEY (performed_by) REFERENCES auth.users (id),
+  CONSTRAINT release_note_publishing_history_release_note_id_fkey FOREIGN KEY (release_note_id) REFERENCES release_notes (id) ON DELETE CASCADE,
+  CONSTRAINT release_note_publishing_history_action_check CHECK (
+    (
+      action = any (
+        array[
+          'draft_saved'::text,
+          'scheduled'::text,
+          'published'::text,
+          'unpublished'::text,
+          'archived'::text
+        ]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS release_note_publishing_history_release_note_id_idx ON public.release_note_publishing_history USING btree (release_note_id) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS release_note_publishing_history_action_idx ON public.release_note_publishing_history USING btree (action) TABLESPACE pg_default;
+
+CREATE TABLE IF NOT EXISTS public.release_note_collaborators (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  release_note_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  role text NULL DEFAULT 'editor'::text,
+  added_by uuid NULL,
+  CONSTRAINT release_note_collaborators_pkey PRIMARY KEY (id),
+  CONSTRAINT release_note_collaborators_release_note_id_user_id_key UNIQUE (release_note_id, user_id),
+  CONSTRAINT release_note_collaborators_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users (id),
+  CONSTRAINT release_note_collaborators_release_note_id_fkey FOREIGN KEY (release_note_id) REFERENCES release_notes (id) ON DELETE CASCADE,
+  CONSTRAINT release_note_collaborators_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE,
+  CONSTRAINT release_note_collaborators_role_check CHECK (
+    (
+      role = any (
+        array['editor'::text, 'reviewer'::text, 'viewer'::text]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS release_note_collaborators_release_note_id_idx ON public.release_note_collaborators USING btree (release_note_id) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS release_note_collaborators_user_id_idx ON public.release_note_collaborators USING btree (user_id) TABLESPACE pg_default;
+
 -- Add missing organization fields
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS slug TEXT;
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS description TEXT;

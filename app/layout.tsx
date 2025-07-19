@@ -6,6 +6,7 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { PrismLoader } from '@/components/editor/prism-loader'
 import { initializeDatabaseOptimization } from '@/lib/database-config'
 import '@/lib/startup-validation' // Run startup validation
+import AuthInitializer from '@/components/AuthInitializer';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <PrismLoader />
         <ErrorBoundary>
+          <AuthInitializer />
           {children}
         </ErrorBoundary>
         <SpeedInsights />

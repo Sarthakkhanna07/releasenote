@@ -6,9 +6,9 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  GithubIcon, 
-  TestTubeIcon, 
+import {
+  GithubIcon,
+  TestTubeIcon,
   RefreshCwIcon,
   ExternalLinkIcon,
   CheckCircleIcon,
@@ -47,7 +47,7 @@ export default function IntegrationsPage() {
 
   const loadIntegrations = async () => {
     if (!user) return
-    
+
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -58,30 +58,30 @@ export default function IntegrationsPage() {
       if (error) throw error
 
       const integrationTypes = [
-        { 
-          type: 'github', 
-          name: 'GitHub', 
+        {
+          type: 'github',
+          name: 'GitHub',
           description: 'Import issues, pull requests, and commits for automated release notes',
           icon: '🐙',
           connectUrl: '/api/auth/github'
         },
-        { 
-          type: 'jira', 
-          name: 'Jira', 
+        {
+          type: 'jira',
+          name: 'Jira',
           description: 'Sync tickets and project management data for comprehensive release tracking',
           icon: '🔷',
           connectUrl: '/api/auth/jira'
         },
-        { 
-          type: 'linear', 
-          name: 'Linear', 
+        {
+          type: 'linear',
+          name: 'Linear',
           description: 'Import issues and development workflow for streamlined release management',
           icon: '📐',
           connectUrl: '/api/auth/linear'
         },
-        { 
-          type: 'slack', 
-          name: 'Slack', 
+        {
+          type: 'slack',
+          name: 'Slack',
           description: 'Send release notifications and updates to your team channels',
           icon: '💬',
           connectUrl: '/api/auth/slack'
@@ -136,14 +136,14 @@ export default function IntegrationsPage() {
 
   const handleTest = async (integration: Integration) => {
     if (!integration.connected) return
-    
+
     setTesting(integration.id)
     setError('')
     setSuccess('')
-    
+
     try {
       let testEndpoint = ''
-      
+
       switch (integration.type) {
         case 'github':
           testEndpoint = '/api/integrations/github/repositories'
@@ -151,27 +151,27 @@ export default function IntegrationsPage() {
         default:
           throw new Error(`Testing not implemented for ${integration.type}`)
       }
-      
+
       const response = await fetch(testEndpoint)
       if (!response.ok) {
         throw new Error(`Test failed: ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       setSuccess(`${integration.name} test successful! Found ${data.repositories?.length || 0} repositories.`)
-      
+
       // Update integration status
-      setIntegrations(prev => prev.map(i => 
-        i.id === integration.id 
+      setIntegrations(prev => prev.map(i =>
+        i.id === integration.id
           ? { ...i, status: 'active', repositories: data.repositories?.length || 0 }
           : i
       ))
-      
+
     } catch (err) {
       setError(`${integration.name} test failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
-      
+
       // Update integration status to error
-      setIntegrations(prev => prev.map(i => 
+      setIntegrations(prev => prev.map(i =>
         i.id === integration.id ? { ...i, status: 'error' } : i
       ))
     } finally {
@@ -181,7 +181,7 @@ export default function IntegrationsPage() {
 
   const handleDisconnect = async (integration: Integration) => {
     if (!user || !integration.connected) return
-    
+
     try {
       const { error } = await supabase
         .from('integrations')
@@ -190,10 +190,10 @@ export default function IntegrationsPage() {
         .eq('organization_id', user.id)
 
       if (error) throw error
-      
+
       setSuccess(`${integration.name} disconnected successfully`)
       await loadIntegrations()
-      
+
     } catch (err) {
       setError(`Failed to disconnect ${integration.name}: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
@@ -201,7 +201,7 @@ export default function IntegrationsPage() {
 
   const getStatusIcon = (integration: Integration) => {
     if (!integration.connected) return null
-    
+
     switch (integration.status) {
       case 'active':
         return <CheckCircleIcon className="h-4 w-4 text-green-600" />
@@ -241,7 +241,7 @@ export default function IntegrationsPage() {
           {error}
         </div>
       )}
-      
+
       {success && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
           {success}
@@ -253,7 +253,7 @@ export default function IntegrationsPage() {
         <h2 className="text-xl font-semibold text-[#101828]">
           Available Integrations
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {integrations.map((integration) => (
             <Card key={integration.id} className="border-[#e4e7ec] hover:shadow-md transition-shadow">
@@ -275,12 +275,12 @@ export default function IntegrationsPage() {
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="space-y-4">
                 <p className="text-sm text-[#667085]">
                   {integration.description}
                 </p>
-                
+
                 {integration.connected && (
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <div className="space-y-1 text-sm">
@@ -301,14 +301,14 @@ export default function IntegrationsPage() {
                     </div>
                   </div>
                 )}
-                
+
                 <div className="flex flex-col gap-2">
                   {integration.connected ? (
                     <>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="flex-1"
                           disabled={testing === integration.id}
                           onClick={() => handleTest(integration)}
@@ -316,15 +316,15 @@ export default function IntegrationsPage() {
                           <TestTubeIcon className="h-4 w-4 mr-2" />
                           {testing === integration.id ? 'Testing...' : 'Test Connection'}
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleDisconnect(integration)}
                         >
                           Disconnect
                         </Button>
                       </div>
-                      
+
                       {integration.type === 'github' && (
                         <Link href="/releases/new/ai" className="w-full">
                           <Button className="w-full bg-[#7F56D9] text-white hover:bg-[#6941C6]">
@@ -335,7 +335,7 @@ export default function IntegrationsPage() {
                       )}
                     </>
                   ) : (
-                    <Button 
+                    <Button
                       onClick={() => handleConnect(integration)}
                       className="w-full bg-[#7F56D9] text-white hover:bg-[#6941C6]"
                     >

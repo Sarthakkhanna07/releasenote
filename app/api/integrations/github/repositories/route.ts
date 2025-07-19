@@ -7,11 +7,14 @@ import { GitHubService } from '@/lib/integrations/github'
  * Get GitHub repositories for the authenticated user
  */
 export async function GET(request: NextRequest) {
+  console.log('[API] /api/integrations/github/repositories - called');
   try {
     const supabase = createRouteHandlerClient({ cookies })
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    console.log('[API] Session:', session, 'SessionError:', sessionError);
 
     if (sessionError || !session?.user) {
+      console.log('[API] Unauthorized');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -22,8 +25,10 @@ export async function GET(request: NextRequest) {
       .eq('type', 'github')
       .eq('organization_id', session.user.id)
       .single()
+    console.log('[API] Integration:', integration, 'IntegrationError:', integrationError);
 
     if (integrationError || !integration) {
+      console.log('[API] GitHub integration not found');
       return NextResponse.json(
         { error: 'GitHub integration not found. Please connect your GitHub account first.' },
         { status: 404 }
@@ -31,7 +36,9 @@ export async function GET(request: NextRequest) {
     }
 
     const accessToken = integration.config?.access_token
+    console.log('[API] AccessToken:', accessToken ? 'Present' : 'Missing');
     if (!accessToken) {
+      console.log('[API] GitHub access token not found');
       return NextResponse.json(
         { error: 'GitHub access token not found. Please reconnect your GitHub account.' },
         { status: 400 }
@@ -44,6 +51,7 @@ export async function GET(request: NextRequest) {
     const direction = url.searchParams.get('direction') as 'asc' | 'desc' || 'desc'
     const per_page = parseInt(url.searchParams.get('per_page') || '50')
     const page = parseInt(url.searchParams.get('page') || '1')
+    console.log('[API] Query params:', { sort, direction, per_page, page });
 
     // Initialize GitHub service and fetch repositories
     const github = new GitHubService(accessToken)
@@ -53,6 +61,7 @@ export async function GET(request: NextRequest) {
       per_page: Math.min(per_page, 100), // Limit to 100 per page
       page
     })
+    console.log('[API] Number of repositories fetched:', repositories.length);
 
     return NextResponse.json({
       repositories,
@@ -64,7 +73,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('GitHub repositories fetch error:', error)
+    console.error('[API] GitHub repositories fetch error:', error)
     
     if (error instanceof Error && error.message.includes('GitHub API error')) {
       return NextResponse.json(

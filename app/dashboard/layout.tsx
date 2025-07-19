@@ -1,6 +1,8 @@
 'use client'
 import React from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/lib/store';
 import { 
   HomeIcon, 
   DocumentTextIcon, 
@@ -16,6 +18,7 @@ const navigation = [
   { name: 'Release Notes', href: '/dashboard/releases', icon: DocumentTextIcon },
   { name: 'Configuration', href: '/dashboard/configuration', icon: Cog6ToothIcon },
   { name: 'AI Context', href: '/dashboard/ai-context', icon: PencilIcon },
+  { name: 'Integrations', href: '/dashboard/integrations', icon: UserGroupIcon },
   { name: 'Templates', href: '/dashboard/templates', icon: EyeIcon },
   { name: 'Support & Help', href: 'mailto:help@releasenote.ai', icon: UserGroupIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
@@ -26,53 +29,50 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname();
+  const user = useAuthStore(state => state.user);
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Static sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-primary-600 px-6 pb-4">
-          <div className="flex h-16 shrink-0 items-center bg-primary-700 px-4">
-            <span className="text-white font-semibold text-xl">ReleaseNoteAI</span>
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-56 lg:flex-col bg-white border-r border-neutral-200">
+        <div className="flex flex-col h-full justify-between py-6">
+          <div>
+            <div className="px-6 mb-6 pb-3 border-b border-neutral-100 shadow-sm bg-white">
+              <span className="block text-xl font-bold text-neutral-900">ReleaseNoteAI</span>
+            </div>
+            <nav>
+              <ul className="flex flex-col gap-y-2 px-4">
+                {navigation.map((item) => (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={`block px-4 py-2 rounded-xl font-medium text-base transition
+                        ${pathname === item.href
+                          ? 'bg-neutral-100 text-neutral-800'
+                          : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'}
+                      `}
+                    >
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
           </div>
-          <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className="text-primary-200 hover:text-white hover:bg-primary-700 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-                      >
-                        <item.icon
-                          className="text-primary-200 group-hover:text-white h-6 w-6 shrink-0"
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              <li className="mt-auto">
-                <div className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-primary-200">
-                  <ArrowLeftOnRectangleIcon
-                    className="h-6 w-6 shrink-0 text-primary-200"
-                    aria-hidden="true"
-                  />
-                  Sign out
-                </div>
-              </li>
-            </ul>
-          </nav>
+          <div className="border-t border-neutral-100 mt-8 pt-4 px-6 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-500 font-semibold text-base">
+              {((user?.user_metadata?.full_name || user?.email || 'U').split(' ').map(n => n[0]).join('')).toUpperCase()}
+            </div>
+            <span className="text-neutral-800 font-medium text-base">
+              {user?.user_metadata?.full_name || user?.email || 'User'}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Main content */}
-      <main className="py-10 lg:pl-72">
-        <div className="px-4 sm:px-6 lg:px-8">
-          {children}
-        </div>
+      <main className="py-0 px-8 w-full flex flex-col items-start gap-8 lg:pl-56">
+        {children}
       </main>
     </div>
   )

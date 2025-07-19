@@ -95,37 +95,30 @@ export default function SettingsPageComponent() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
-      <p className="text-gray-600 dark:text-gray-400">
+    <div className="space-y-8 p-8 bg-default-background min-h-screen">
+      <h1 className="text-2xl font-bold text-default-font">Settings</h1>
+      <p className="text-sm text-subtext-color mb-4">
         Configure default templates, user preferences, and other settings.
       </p>
-      <Card>
-        <CardHeader>
-          <CardTitle>Organization Branding</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <LogoFaviconUploader
-            orgId={user.id}
-            logoUrl={logoUrl}
-            faviconUrl={faviconUrl}
-            onChange={(type, url) => {
-              if (type === 'logo') setLogoUrl(url)
-              else setFaviconUrl(url)
-            }}
-          />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Default Release Note Template</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-gray-500 dark:text-gray-400">
-            Choose a default template for new release notes. This can be overridden during creation.
-          </p>
+      <div className="bg-white border border-neutral-200 rounded-xl px-8 py-8">
+        <h2 className="text-xl font-bold text-default-font mb-4">Organization Branding</h2>
+        <LogoFaviconUploader
+          orgId={user.id}
+          logoUrl={logoUrl}
+          faviconUrl={faviconUrl}
+          onChange={(type, url) => {
+            if (type === 'logo') setLogoUrl(url)
+            else setFaviconUrl(url)
+          }}
+        />
+      </div>
+      <div className="bg-white border border-neutral-200 rounded-xl px-8 py-8">
+        <h2 className="text-xl font-bold text-default-font mb-4">Default Release Note Template</h2>
+        <p className="text-sm text-neutral-500 mb-4">
+          Choose a default template for new release notes. This can be overridden during creation.
+        </p>
           {isLoadingTemplates ? (
-            <div className="text-gray-500 dark:text-gray-400">Loading templates...</div>
+            <div className="text-neutral-400">Loading templates...</div>
           ) : (
             <div className="space-y-4">
               {templates.length === 0 ? (
@@ -135,7 +128,7 @@ export default function SettingsPageComponent() {
                   subtext="Create a template to use as the default for new release notes."
                   action={
                     <Link href="/dashboard/templates">
-                      <Button>
+                      <Button variant="secondary">
                         <PlusIcon className="w-4 h-4 mr-2" />
                         Create Template
                       </Button>
@@ -148,10 +141,10 @@ export default function SettingsPageComponent() {
                     {templates.map((template) => (
                       <div
                         key={template.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                        className={`p-4 border rounded-lg cursor-pointer ${
                           defaultTemplateId === template.id
-                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                            ? 'border-brand-600 bg-brand-50'
+                            : 'border-neutral-200 bg-white hover:border-neutral-300'
                         }`}
                         onClick={() => handleSaveDefaultTemplate(template.id)}
                       >
@@ -159,13 +152,13 @@ export default function SettingsPageComponent() {
                           <div className="flex items-center space-x-3">
                             <span className="text-2xl">{template.icon || '📝'}</span>
                             <div>
-                              <h3 className="font-medium text-gray-900 dark:text-white">{template.name}</h3>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{template.description}</p>
+                              <h3 className="font-medium text-default-font">{template.name}</h3>
+                              <p className="text-sm text-neutral-500">{template.description}</p>
                             </div>
                           </div>
                           {defaultTemplateId === template.id && (
                             <div className="flex items-center space-x-2">
-                              <span className="text-xs bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200 px-2 py-1 rounded">
+                              <span className="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded-full">
                                 Default
                               </span>
                             </div>
@@ -174,41 +167,32 @@ export default function SettingsPageComponent() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
                     <Link
                       href="/dashboard/templates"
-                      className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400"
+                      className="text-sm text-brand-600 hover:text-brand-500"
                     >
                       Manage all templates &rarr;
                     </Link>
                     {isSavingTemplate && (
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Saving...</span>
+                      <span className="text-sm text-neutral-400">Saving...</span>
                     )}
                   </div>
                 </>
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
       {/* Domain Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Domain Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <DomainSettingsSection userId={user.id} />
-        </CardContent>
-      </Card>
+      <div className="bg-white border border-neutral-200 rounded-xl px-8 py-8">
+        <h2 className="text-xl font-bold text-default-font mb-4">Domain Settings</h2>
+        <DomainSettingsSection userId={user.id} />
+      </div>
       {/* SSO Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>SSO Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <SSOSettingsSection userId={user.id} />
-        </CardContent>
-      </Card>
+      <div className="bg-white border border-neutral-200 rounded-xl px-8 py-8">
+        <h2 className="text-xl font-bold text-default-font mb-4">SSO Settings</h2>
+        <SSOSettingsSection userId={user.id} />
+      </div>
     </div>
   )
 }

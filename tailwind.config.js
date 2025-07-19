@@ -4,6 +4,7 @@ module.exports = {
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/subframe-ui/ui/**/*.{tsx,ts,js,jsx}'
   ],
   theme: {
     extend: {
@@ -25,4 +26,5 @@ module.exports = {
     },
   },
   plugins: [],
+  presets: [require("./components/subframe-ui/ui/tailwind.config.js")]
 } 

@@ -1,132 +1,172 @@
-'use client'
-import Link from 'next/link'
-import { PlusIcon, LinkIcon, PencilIcon, EyeIcon, UserGroupIcon } from '@heroicons/react/24/outline'
-import { Card, CardContent } from '@/components/ui/card'
+"use client";
+
+import React from "react";
+import { Button } from "@/subframe-ui/components/Button";
+import { FeatherBell, FeatherSettings, FeatherFileText, FeatherArrowRight, FeatherLink } from "@subframe/core";
+import { IconButton } from "@/subframe-ui/components/IconButton";
+import { IconWithBackground } from "@/subframe-ui/components/IconWithBackground";
+import Link from "next/link";
 
 export default function DashboardHomePage() {
   return (
-    <div className="space-y-8">
-      {/* Welcome Section - Static */}
-      <section>
-        <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">
+    <div className="px-8 py-0 w-full flex flex-col items-start gap-6">
+      <div className="flex w-full items-center gap-2 border-b border-solid border-neutral-border pb-2 mb-1">
+        <span className="grow shrink-0 basis-0 text-2xl font-semibold text-default-font">
+          Dashboard
+        </span>
+        <Link href="/dashboard/notifications">
+          <Button
+            variant="neutral-tertiary"
+            icon={<FeatherBell />}
+            className="text-sm px-3 py-1"
+          >
+            Notifications
+          </Button>
+        </Link>
+        <Link href="/dashboard/settings">
+          <IconButton
+            icon={<FeatherSettings />}
+            className="w-8 h-8"
+          />
+        </Link>
+      </div>
+      <div className="flex flex-col items-start gap-1 mb-2">
+        <span className="text-2xl font-bold text-default-font">
           Welcome to Release Notes Generator
-        </h1>
-        <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
+        </span>
+        <span className="text-base text-subtext-color">
           Ready to generate some awesome release notes?
-        </p>
-      </section>
-
-      {/* Quick Actions Card - Always visible and server-rendered */}
-      <section>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <h2 className="font-semibold text-gray-900 dark:text-white mb-2 md:mb-0 md:mr-6">Quick Actions</h2>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/dashboard/releases/new/ai" className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
-                  <PlusIcon className="w-4 h-4 mr-1" /> Create Release Note
-                </Link>
-                <Link href="/dashboard/configuration" className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
-                  <LinkIcon className="w-4 h-4 mr-1" /> Setup Integration
-                </Link>
-                <Link href="/dashboard/ai-context" className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
-                  <PencilIcon className="w-4 h-4 mr-1" /> AI Context Settings
-                </Link>
-                <Link href="/dashboard/templates" className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
-                  <EyeIcon className="w-4 h-4 mr-1" /> Template Management
-                </Link>
-                <a href="mailto:help@releasenote.ai" className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
-                  <UserGroupIcon className="w-4 h-4 mr-1" /> Support & Help
-                </a>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Static placeholder content */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Recent Release Notes</h2>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <EyeIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 mb-4 text-center">No release notes created yet.</p>
-            <Link href="/dashboard/releases/start" className="inline-flex items-center px-4 py-2 rounded-md bg-primary-600 text-white font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors">
-              <PlusIcon className="w-4 h-4 mr-2" /> Create your first one
-            </Link>
-          </CardContent>
-        </Card>
-        <div className="mt-6 text-right">
-          <Link href="/dashboard/releases" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 hover:underline">
-            View all release notes →
+        </span>
+      </div>
+      <div className="flex w-full flex-col items-start gap-4 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6">
+        <span className="text-lg font-semibold text-default-font mb-2">
+          Quick Actions
+        </span>
+        <div className="flex w-full flex-wrap items-start gap-14">
+          <Link href="/dashboard/releases/new/ai">
+            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
+              Create Release Note
+            </Button>
+          </Link>
+          <Link href="/dashboard/configuration">
+            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
+              Setup Integration
+            </Button>
+          </Link>
+          <Link href="/dashboard/ai-context">
+            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
+              AI Context Settings
+            </Button>
+          </Link>
+          <Link href="/dashboard/templates">
+            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
+              Template Management
+            </Button>
+          </Link>
+          <a href="mailto:help@releasenote.ai">
+            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
+              Support &amp; Help
+            </Button>
+          </a>
+        </div>
+      </div>
+      <div className="flex w-full flex-col items-start gap-3">
+        <span className="text-lg font-semibold text-default-font mb-1">
+          Recent Release Notes
+        </span>
+        <div className="flex w-full flex-col items-center gap-3 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-10">
+          <IconWithBackground size="large" icon={<FeatherFileText />} />
+          <span className="text-base text-subtext-color">
+            No release notes created yet.
+          </span>
+          <Link href="/dashboard/releases/new/ai">
+            <Button className="text-sm px-4 py-2">
+              Create your first one
+            </Button>
           </Link>
         </div>
-      </section>
-
-      {/* Static integrations section */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Integrations Status</h2>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <LinkIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 mb-4 text-center">No integrations connected yet.</p>
-            <Link href="/dashboard/configuration" className="inline-flex items-center px-4 py-2 rounded-md bg-primary-600 text-white font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors">
-              <PlusIcon className="w-4 h-4 mr-2" /> Connect your first integration
-            </Link>
-          </CardContent>
-        </Card>
-        <div className="mt-6 text-right">
-          <Link href="/dashboard/configuration" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 hover:underline">
-            Manage integrations →
+        <Link href="/dashboard/releases">
+          <Button
+            variant="neutral-tertiary"
+            iconRight={<FeatherArrowRight />}
+            className="text-sm px-3 py-1 self-end"
+          >
+            View all release notes
+          </Button>
+        </Link>
+      </div>
+      <div className="flex w-full flex-col items-start gap-3">
+        <span className="text-lg font-semibold text-default-font mb-1">
+          Integrations Status
+        </span>
+        <div className="flex w-full flex-col items-center gap-3 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-10">
+          <IconWithBackground size="large" icon={<FeatherLink />} />
+          <span className="text-base text-subtext-color">
+            No integrations connected yet.
+          </span>
+          <Link href="/dashboard/configuration">
+            <Button className="text-sm px-4 py-2">
+              Connect your first integration
+            </Button>
           </Link>
         </div>
-      </section>
-
-      {/* Getting Started Checklist */}
-      <section>
-        <Card>
-          <div className="p-6 pb-0">
-            <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">Getting Started Checklist</h2>
+        <Link href="/dashboard/configuration">
+          <Button
+            variant="neutral-tertiary"
+            iconRight={<FeatherArrowRight />}
+            className="text-sm px-3 py-1 self-end"
+          >
+            Manage integrations
+          </Button>
+        </Link>
+      </div>
+      <div className="flex w-full flex-col items-start gap-3 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6">
+        <span className="text-lg font-semibold text-default-font mb-1">
+          Getting Started Checklist
+        </span>
+        <div className="flex w-full flex-col items-start gap-2">
+          <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border py-3">
+            <span className="text-base text-default-font">
+              Connect an integration (Jira, GitHub, etc.)
+            </span>
+            <Link href="/dashboard/configuration">
+              <Button variant="neutral-tertiary" className="text-sm px-3 py-1">
+                Setup
+              </Button>
+            </Link>
           </div>
-          <CardContent>
-            <ol className="space-y-3">
-              <li className="flex items-center">
-                <span className="mr-2">
-                  <LinkIcon className="w-5 h-5 text-primary-500" />
-                </span>
-                <span className="flex-1">Connect an integration (Jira, GitHub, etc.)</span>
-                <Link href="/dashboard/configuration" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 ml-2">Setup</Link>
-              </li>
-              <li className="flex items-center">
-                <span className="mr-2">
-                  <PencilIcon className="w-5 h-5 text-primary-500" />
-                </span>
-                <span className="flex-1">Configure your AI Context</span>
-                <Link href="/dashboard/ai-context" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 ml-2">Configure</Link>
-              </li>
-              <li className="flex items-center">
-                <span className="mr-2">
-                  <PlusIcon className="w-5 h-5 text-primary-500" />
-                </span>
-                <span className="flex-1">Create your first Release Note</span>
-                <Link href="/dashboard/releases/new/ai" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 ml-2">Create</Link>
-              </li>
-              <li className="flex items-center">
-                <span className="mr-2">
-                  <EyeIcon className="w-5 h-5 text-primary-500" />
-                </span>
-                <span className="flex-1">Explore and manage Templates</span>
-                <Link href="/dashboard/templates" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 ml-2">Templates</Link>
-              </li>
-            </ol>
-            <div className="mt-4 text-right">
-              <a href="mailto:help@releasenote.ai" className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
-                <UserGroupIcon className="w-4 h-4 mr-1" /> Need help? Contact Support
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+          <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border py-3">
+            <span className="text-base text-default-font">
+              Configure your AI Context
+            </span>
+            <Link href="/dashboard/ai-context">
+              <Button variant="neutral-tertiary" className="text-sm px-3 py-1">
+                Configure
+              </Button>
+            </Link>
+          </div>
+          <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border py-3">
+            <span className="text-base text-default-font">
+              Create your first Release Note
+            </span>
+            <Link href="/dashboard/releases/new/ai">
+              <Button variant="neutral-tertiary" className="text-sm px-3 py-1">
+                Create
+              </Button>
+            </Link>
+          </div>
+          <div className="flex w-full items-center justify-between py-3">
+            <span className="text-base text-default-font">
+              Explore and manage Templates
+            </span>
+            <Link href="/dashboard/templates">
+              <Button variant="neutral-tertiary" className="text-sm px-3 py-1">
+                Templates
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

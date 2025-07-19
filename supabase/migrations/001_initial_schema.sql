@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 -- Create integrations table
 CREATE TABLE IF NOT EXISTS integrations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('github', 'jira', 'linear')),
   external_id TEXT NOT NULL,
   encrypted_credentials JSONB NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS integrations (
 -- Create release_notes table
 CREATE TABLE IF NOT EXISTS release_notes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   integration_id UUID REFERENCES integrations(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   version TEXT,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS release_notes (
   content_markdown TEXT NOT NULL,
   content_html TEXT,
   status TEXT NOT NULL CHECK (status IN ('draft', 'published')),
-  publish_date TIMESTAMP WITH TIME ZONE,
+  published_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(org_id, slug)
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS ticket_cache (
 -- Create subscribers table
 CREATE TABLE IF NOT EXISTS subscribers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   name TEXT,
   status TEXT NOT NULL CHECK (status IN ('active', 'unsubscribed')),
@@ -107,6 +107,22 @@ CREATE POLICY organizations_policy ON organizations
     )
   );
 
+-- Allow users to see organizations they are members of
+CREATE POLICY organizations_select_policy ON organizations
+  FOR SELECT USING (
+    id IN (
+      SELECT organization_members.organization_id
+      FROM organization_members
+      WHERE organization_members.user_id = auth.uid()
+    )
+  );
+
+-- Allow any authenticated user to insert new organizations
+CREATE POLICY organizations_insert_policy ON organizations
+  FOR INSERT WITH CHECK (
+    auth.uid() IS NOT NULL
+  );
+
 -- Integrations: Users can only see integrations for organizations they are members of
 CREATE POLICY integrations_policy ON integrations
   FOR ALL USING (
@@ -141,12 +157,28 @@ CREATE POLICY subscribers_policy ON subscribers
     )
   );
 
--- Organization Members: Users can only see members of organizations they belong to
-CREATE POLICY organization_members_policy ON organization_members
-  FOR ALL USING (
-    organization_id IN (
-      SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
-    )
+-- Organization Members: Users can only see their own membership row (recursion-free)
+CREATE POLICY organization_members_select_policy ON organization_members
+  FOR SELECT USING (
+    user_id = auth.uid()
+  );
+
+-- Organization Members: Users can only insert their own membership
+CREATE POLICY organization_members_insert_policy ON organization_members
+  FOR INSERT WITH CHECK (
+    user_id = auth.uid()
+  );
+
+-- Organization Members: Users can only update their own membership
+CREATE POLICY organization_members_update_policy ON organization_members
+  FOR UPDATE USING (
+    user_id = auth.uid()
+  );
+
+-- Organization Members: Users can only delete their own membership
+CREATE POLICY organization_members_delete_policy ON organization_members
+  FOR DELETE USING (
+    user_id = auth.uid()
   );
 
 -- Create function to update updated_at timestamp

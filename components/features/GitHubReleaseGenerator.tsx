@@ -30,7 +30,7 @@ export function GitHubReleaseGenerator() {
     setError('')
     
     try {
-      const response = await fetch('/api/integrations/github/repositories')
+      const response = await fetch('/api/github/repositories')
       
       if (!response.ok) {
         throw new Error('Failed to load repositories')
