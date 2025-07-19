@@ -17,7 +17,7 @@ export async function GET() {
   // Get the GitHub integration for this user/org
   const { data: integration, error: integrationError } = await supabase
     .from('integrations')
-    .select('config')
+    .select('encrypted_credentials')
     .eq('type', 'github')
     .eq('organization_id', session.user.id)
     .single();
@@ -28,7 +28,7 @@ export async function GET() {
     return NextResponse.json({ error: 'GitHub integration not found' }, { status: 404 });
   }
 
-  const githubToken = integration.config.access_token;
+  const githubToken = integration.encrypted_credentials?.access_token;
   console.log('[API] GitHub Token:', githubToken ? 'Present' : 'Missing');
 
   // Fetch repositories from GitHub API
@@ -49,10 +49,6 @@ export async function GET() {
   console.log('[API] Number of repositories fetched:', repositories.length);
 
   return NextResponse.json({
-    repositories: repositories.map((repo: any) => ({
-      id: repo.id,
-      full_name: repo.full_name,
-      private: repo.private,
-    })),
+    repositories // Return the full array as received from GitHub
   });
 } 

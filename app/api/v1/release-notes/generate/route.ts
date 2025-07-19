@@ -73,7 +73,7 @@ async function fetchFromIntegrations(ticketId: string, organizationId: string): 
     // Get active integrations for the organization
     const { data: integrations, error: intError } = await supabase
       .from('integrations')
-      .select('type, config, access_token')
+      .select('type, encrypted_credentials')
       .eq('organization_id', organizationId)
       .eq('status', 'connected')
     
@@ -128,7 +128,7 @@ async function fetchFromIntegrations(ticketId: string, organizationId: string): 
 async function fetchFromGitHub(ticketId: string, integration: any): Promise<TicketDetail | null> {
   try {
     const { GitHubService } = await import('@/lib/integrations/github')
-    const github = new GitHubService(integration.access_token)
+    const github = new GitHubService(integration.encrypted_credentials?.access_token)
     
     // Parse GitHub ticket ID (could be issue or PR number)
     const match = ticketId.match(/(\d+)/) || ticketId.match(/([^\/]+)\/([^\/]+)#(\d+)/)

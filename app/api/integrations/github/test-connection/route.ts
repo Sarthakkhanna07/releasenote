@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     // Get GitHub integration
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('*')
+      .select('encrypted_credentials')
       .eq('organization_id', session.user.id)
       .eq('type', 'github')
       .single()
@@ -29,12 +29,13 @@ export async function POST(request: NextRequest) {
 
     const tests = []
     let overallSuccess = true
+    const accessToken = integration.encrypted_credentials?.access_token
 
     // Test 1: Basic Authentication
     try {
       const userResponse = await fetch('https://api.github.com/user', {
         headers: {
-          'Authorization': `token ${integration.access_token}`,
+          'Authorization': `token ${accessToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'ReleaseNoteAI'
         }
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
     try {
       const reposResponse = await fetch('https://api.github.com/user/repos?per_page=5&sort=updated', {
         headers: {
-          'Authorization': `token ${integration.access_token}`,
+          'Authorization': `token ${accessToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'ReleaseNoteAI'
         }
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     try {
       const rateLimitResponse = await fetch('https://api.github.com/rate_limit', {
         headers: {
-          'Authorization': `token ${integration.access_token}`,
+          'Authorization': `token ${accessToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'ReleaseNoteAI'
         }
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
     try {
       const hooksResponse = await fetch('https://api.github.com/user/repos?per_page=1', {
         headers: {
-          'Authorization': `token ${integration.access_token}`,
+          'Authorization': `token ${accessToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'ReleaseNoteAI'
         }
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
           const testRepo = repos[0]
           const webhooksResponse = await fetch(`https://api.github.com/repos/${testRepo.full_name}/hooks`, {
             headers: {
-              'Authorization': `token ${integration.access_token}`,
+              'Authorization': `token ${accessToken}`,
               'Accept': 'application/vnd.github.v3+json',
               'User-Agent': 'ReleaseNoteAI'
             }
@@ -218,7 +219,7 @@ export async function POST(request: NextRequest) {
       try {
         const endpointResponse = await fetch(endpoint.url, {
           headers: {
-            'Authorization': `token ${integration.access_token}`,
+            'Authorization': `token ${accessToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'ReleaseNoteAI'
           }

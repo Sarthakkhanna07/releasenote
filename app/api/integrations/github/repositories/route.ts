@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // Get GitHub integration for the user
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('config')
+      .select('encrypted_credentials')
       .eq('type', 'github')
       .eq('organization_id', session.user.id)
       .single()
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const accessToken = integration.config?.access_token
+    const accessToken = integration.encrypted_credentials?.access_token
     console.log('[API] AccessToken:', accessToken ? 'Present' : 'Missing');
     if (!accessToken) {
       console.log('[API] GitHub access token not found');

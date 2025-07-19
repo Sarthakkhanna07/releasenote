@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Get GitHub integration
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('config')
+      .select('encrypted_credentials')
       .eq('type', 'github')
       .eq('organization_id', session.user.id)
       .single()
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const accessToken = integration.config?.access_token
+    const accessToken = integration.encrypted_credentials?.access_token
     if (!accessToken) {
       return NextResponse.json(
         { error: 'GitHub access token not found. Please reconnect your GitHub account.' },

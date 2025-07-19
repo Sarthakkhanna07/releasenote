@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     // Get GitHub integration
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('*')
+      .select('encrypted_credentials')
       .eq('id', integrationId || 'github')
       .eq('organization_id', session.user.id)
       .eq('type', 'github')
@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
         }]
       })
     }
+
+    const accessToken = integration.encrypted_credentials?.access_token
 
     const startTime = Date.now()
     const health = {
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
       // Test GitHub API connection
       const githubResponse = await fetch('https://api.github.com/user', {
         headers: {
-          'Authorization': `token ${integration.access_token}`,
+          'Authorization': `token ${accessToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'ReleaseNoteAI'
         }
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest) {
         try {
           const reposResponse = await fetch('https://api.github.com/user/repos?per_page=1', {
             headers: {
-              'Authorization': `token ${integration.access_token}`,
+              'Authorization': `token ${accessToken}`,
               'Accept': 'application/vnd.github.v3+json',
               'User-Agent': 'ReleaseNoteAI'
             }

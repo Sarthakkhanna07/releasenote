@@ -58,15 +58,21 @@ export async function GET(request: Request) {
       )
     }
 
-    // Store the GitHub integration in the integrations table
-    const { error: insertError } = await supabase.from('integrations').insert({
-      provider: 'github',
-      access_token: accessToken,
-      refresh_token: tokenData.refresh_token,
-      expires_at: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null,
-      user_info: githubUser,
-      organization_id: session.user.user_metadata?.organization_id || session.user.id, // Use actual org ID
-    })
+    // Store the GitHub integration in the integrations table using encrypted_credentials
+    const { error: insertError } = await supabase.from('integrations').upsert({
+      organization_id: session.user.user_metadata?.organization_id || session.user.id,
+      type: 'github',
+      external_id: githubUser.id?.toString() || githubUser.login,
+      encrypted_credentials: {
+        access_token: accessToken,
+        refresh_token: tokenData.refresh_token,
+        expires_at: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null,
+        user_info: githubUser
+      },
+      config: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'organization_id,type,external_id' });
 
     if (insertError) {
       return NextResponse.redirect(
