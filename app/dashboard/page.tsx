@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/subframe-ui/components/Button";
-import { FeatherBell, FeatherSettings, FeatherFileText, FeatherArrowRight, FeatherLink } from "@subframe/core";
+import { FeatherBell, FeatherSettings, FeatherFileText, FeatherArrowRight, FeatherLink, FeatherPlus, FeatherZap, FeatherUsers } from "@subframe/core";
 import { IconButton } from "@/subframe-ui/components/IconButton";
 import { IconWithBackground } from "@/subframe-ui/components/IconWithBackground";
 import Link from "next/link";
@@ -39,10 +39,59 @@ const INTEGRATION_TYPES = [
 export default function DashboardHomePage() {
   const user = useAuthStore(state => state.user);
   const [integrations, setIntegrations] = useState<any[]>([]);
-  const [loadingIntegrations, setLoadingIntegrations] = useState(false);
-  const [testStatus, setTestStatus] = useState<{ [type: string]: 'idle' | 'loading' | 'success' | 'error' }>({});
-  const [testError, setTestError] = useState<{ [type: string]: string }>({});
+  const [loadingIntegrations, setLoadingIntegrations] = useState<boolean>(false);
+  const [onboardingLoading, setOnboardingLoading] = useState<boolean>(true);
+  const [onboardingError, setOnboardingError] = useState<string | null>(null);
+  const [hasAIContext, setHasAIContext] = useState<boolean>(false);
+  const [hasReleaseNote, setHasReleaseNote] = useState<boolean>(false);
+  const [hasPublishedNote, setHasPublishedNote] = useState<boolean>(false);
+  const [recentNote, setRecentNote] = useState<any | null>(null);
+  const didYouKnowTips = [
+    'You can use AI to summarize your Jira tickets and generate professional release notes in seconds.',
+    'Integrations let you automate release notes from GitHub, Jira, and more.',
+    'You can customize your AI context for more tailored release notes.',
+    'Publishing release notes keeps your users informed and engaged.',
+    'You can manage your integrations anytime from the Integrations page.'
+  ];
+  const [tip, setTip] = useState(didYouKnowTips[0]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    setOnboardingLoading(true);
+    setOnboardingError(null);
+    const fetchOnboarding = async () => {
+      try {
+        // Fetch AI context
+        const aiRes = await fetch('/api/ai-context');
+        const aiJson = await aiRes.json();
+        setHasAIContext(!!aiJson.aiContext);
+        // Fetch release notes
+        const supabase = createClientComponentClient();
+        const { data: notes, error } = await supabase
+          .from('release_notes')
+          .select('id,status')
+          .eq('organization_id', user.id);
+        if (error) throw error;
+        setHasReleaseNote((notes || []).length > 0);
+        setHasPublishedNote((notes || []).some((n: any) => n.status === 'published'));
+      } catch (err: any) {
+        setOnboardingError(err.message || 'Failed to load onboarding progress');
+      } finally {
+        setOnboardingLoading(false);
+      }
+    };
+    fetchOnboarding();
+  }, [user?.id]);
+
+  const checklist = [
+    { label: 'Connect an integration', done: integrations.length > 0 },
+    { label: 'Configure AI context', done: hasAIContext },
+    { label: 'Create your first release note', done: hasReleaseNote },
+    { label: 'Publish your first note', done: hasPublishedNote },
+  ];
+  const completedSteps = checklist.filter(c => c.done).length;
+  const totalSteps = checklist.length;
+  // --- Fetch integrations ---
   useEffect(() => {
     if (!user?.id) return;
     setLoadingIntegrations(true);
@@ -58,114 +107,118 @@ export default function DashboardHomePage() {
     fetchIntegrations();
   }, [user?.id]);
 
-  const handleTestConnection = useCallback(async (type: string) => {
-    setTestStatus(prev => ({ ...prev, [type]: 'loading' }));
-    setTestError(prev => ({ ...prev, [type]: '' }));
-    try {
-      const res = await fetch(`/api/integrations/${type}/test-connection`, { method: 'POST' });
-      if (!res.ok) throw new Error('Connection failed');
-      setTestStatus(prev => ({ ...prev, [type]: 'success' }));
-    } catch (err: any) {
-      setTestStatus(prev => ({ ...prev, [type]: 'error' }));
-      setTestError(prev => ({ ...prev, [type]: err.message || 'Test failed' }));
-    } finally {
-      setTimeout(() => setTestStatus(prev => ({ ...prev, [type]: 'idle' })), 2000);
-    }
-  }, []);
-
-  // Map integrations by type for quick lookup
+  // Map integrations by type for quick lookup (for Integrations Status section)
   const integrationsByType = integrations.reduce((acc, i) => {
     acc[i.type] = i;
     return acc;
   }, {} as Record<string, any>);
-
+  // --- Personalized greeting ---
+  const displayName = user?.user_metadata?.full_name || user?.email || 'there';
+  const orgName = user?.user_metadata?.organization_name || '';
+  const initials = (user?.user_metadata?.full_name || user?.email || 'U')
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase();
+  // --- Layout ---
+  // Fetch recent release note and random tip
+  useEffect(() => {
+    if (!user?.id) return;
+    // Pick a random tip
+    setTip(didYouKnowTips[Math.floor(Math.random() * didYouKnowTips.length)]);
+    // Fetch most recent release note
+    const fetchRecentNote = async () => {
+      const supabase = createClientComponentClient();
+      const { data: notes } = await supabase
+        .from('release_notes')
+        .select('id,title,created_at,status')
+        .eq('organization_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      setRecentNote(notes && notes.length > 0 ? notes[0] : null);
+    };
+    fetchRecentNote();
+  }, [user?.id]);
   return (
-    <div className="px-8 py-0 w-full flex flex-col items-start gap-6">
-      <div className="flex w-full items-center gap-2 border-b border-solid border-neutral-border pb-2 mb-1">
-        <span className="grow shrink-0 basis-0 text-2xl font-semibold text-default-font">
-          Dashboard
-        </span>
-        <Link href="/dashboard/notifications">
-          <Button
-            variant="neutral-tertiary"
-            icon={<FeatherBell />}
-            className="text-sm px-3 py-1"
-          >
-            Notifications
-          </Button>
-        </Link>
-        <Link href="/dashboard/settings">
-          <IconButton
-            icon={<FeatherSettings />}
-            className="w-8 h-8"
-          />
-        </Link>
-      </div>
-      <div className="flex flex-col items-start gap-1 mb-2">
-        <span className="text-2xl font-bold text-default-font">
-          Welcome to Release Notes Generator
-        </span>
-        <span className="text-base text-subtext-color">
-          Ready to generate some awesome release notes?
-        </span>
-      </div>
-      <div className="flex w-full flex-col items-start gap-4 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6">
-        <span className="text-lg font-semibold text-default-font mb-2">
-          Quick Actions
-        </span>
-        <div className="flex w-full flex-wrap items-start gap-14">
-          <Link href="/dashboard/releases/start">
-            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
-              Create Release Notes
-            </Button>
+    <div className="px-8 py-0 w-full flex flex-col items-start gap-8">
+      {/* Welcome & Progress */}
+      <div className="w-full flex flex-col gap-2 pt-8 pb-2">
+        <div className="flex items-center gap-4 mb-2 justify-between w-full">
+          <div className="flex items-center gap-4">
+            <span className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-lg">{initials}</span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold text-default-font">Welcome back, {displayName}!</span>
+              {orgName && <span className="text-sm text-neutral-500">{orgName}</span>}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/notifications" title="Notifications">
+              <IconButton icon={<FeatherBell />} aria-label="Notifications" />
+            </Link>
+            <Link href="/dashboard/settings" title="Settings">
+              <IconButton icon={<FeatherSettings />} aria-label="Settings" />
+            </Link>
+          </div>
+        </div>
+        <span className="text-base text-subtext-color">Let’s get your release notes workflow humming.</span>
+        <div className="flex items-center gap-3 mt-2">
+          <div className="w-48 h-2 bg-neutral-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-brand-600 rounded-full transition-all" style={{ width: `${(completedSteps / totalSteps) * 100}%` }} />
+          </div>
+          <span className="text-xs text-neutral-500">{completedSteps}/{totalSteps} steps complete</span>
+        </div>
+        {/* Quick Actions Row */}
+        <div className="flex gap-4 mt-4">
+          <Link href="/dashboard/releases/start" title="Create Release Note">
+            <Button size="small" variant="brand-primary" icon={<FeatherPlus />} aria-label="Create Release Note" />
           </Link>
-          <Link href="/dashboard/integrations">
-            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
-              Integrations
-            </Button>
+          <Link href="/dashboard/integrations" title="Manage Integrations">
+            <Button size="small" variant="neutral-secondary" icon={<FeatherSettings />} aria-label="Manage Integrations" />
           </Link>
-          <Link href="/dashboard/ai-context">
-            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
-              AI Context Settings
-            </Button>
+          <Link href="/dashboard/ai-context" title="Configure AI Context">
+            <Button size="small" variant="neutral-secondary" icon={<FeatherZap />} aria-label="Configure AI Context" />
           </Link>
-          <Link href="/dashboard/templates">
-            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
-              Template Management
-            </Button>
-          </Link>
-          <a href="mailto:help@releasenote.ai">
-            <Button variant="neutral-secondary" size="large" className="px-6 py-3 min-w-[180px]">
-              Support &amp; Help
-            </Button>
-          </a>
         </div>
       </div>
-      <div className="flex w-full flex-col items-start gap-3">
-        <span className="text-lg font-semibold text-default-font mb-1">
-          Recent Release Notes
-        </span>
-        <div className="flex w-full flex-col items-center gap-3 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-10">
-          <IconWithBackground size="large" icon={<FeatherFileText />} />
-          <span className="text-base text-subtext-color">
-            No release notes created yet.
-          </span>
-          <Link href="/dashboard/releases/start">
-            <Button className="text-sm px-4 py-2">
-              Create your first one
-            </Button>
-          </Link>
-        </div>
-        <Link href="/dashboard/releases">
-          <Button
-            variant="neutral-tertiary"
-            iconRight={<FeatherArrowRight />}
-            className="text-sm px-3 py-1 self-end"
-          >
-            View all release notes
-          </Button>
-        </Link>
+      {/* Get Started Checklist */}
+      <div className="w-full rounded-xl border border-neutral-200 bg-white px-8 py-6 flex flex-col gap-4">
+        <span className="text-lg font-semibold text-default-font mb-1">Get Started</span>
+        {onboardingLoading ? (
+          <span className="text-base text-neutral-400">Loading your onboarding progress...</span>
+        ) : onboardingError ? (
+          <span className="text-base text-red-500">{onboardingError}</span>
+        ) : completedSteps === totalSteps ? (
+          <div className="flex flex-col items-center gap-3 py-6">
+            <span className="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-700 text-3xl">✓</span>
+            <span className="text-xl font-semibold text-green-700">You’re all set!</span>
+            <span className="text-base text-neutral-500 text-center">You’ve completed all onboarding steps. Start publishing your release notes and keep your users in the loop.</span>
+            <Link href="/dashboard/releases/start">
+              <Button variant="brand-primary" size="large" className="mt-2">Create a Release Note</Button>
+            </Link>
+          </div>
+        ) : (
+          <ol className="flex flex-col gap-3">
+            {checklist.map((item, i) => (
+              <li key={item.label} className="flex items-center gap-3">
+                <span className={`w-5 h-5 flex items-center justify-center rounded-full border ${item.done ? 'bg-green-100 border-green-400 text-green-700' : 'bg-neutral-100 border-neutral-300 text-neutral-400'}`}>{item.done ? '✓' : i + 1}</span>
+                <span className={`text-base ${item.done ? 'line-through text-neutral-400' : 'text-default-font'}`}>{item.label}</span>
+                {/* Contextual next actions */}
+                {!item.done && item.label === 'Configure AI context' && (
+                  <Link href="/dashboard/ai-context">
+                    <Button size="small" variant="neutral-secondary" className="ml-2">Configure</Button>
+                  </Link>
+                )}
+                {!item.done && item.label === 'Create your first release note' && (
+                  <Link href="/dashboard/releases/start">
+                    <Button size="small" variant="neutral-secondary" className="ml-2">Create</Button>
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
+      {/* Integrations Section (existing code) */}
       <div className="flex w-full flex-col items-start gap-3">
         <span className="text-lg font-semibold text-default-font mb-1">
           Integrations Status
@@ -192,21 +245,6 @@ export default function DashboardHomePage() {
                       {isConnected && integration.created_at && (
                         <span className="text-xs text-neutral-400">Last sync: {new Date(integration.created_at).toLocaleDateString()}</span>
                       )}
-                      {meta.type === 'github' && isConnected && false && (
-                        <Button
-                          size="small"
-                          variant="neutral-secondary"
-                          className="ml-2"
-                          disabled={testStatus.github === 'loading'}
-                          onClick={() => handleTestConnection('github')}
-                          aria-label="Test GitHub Connection"
-                        >
-                          {testStatus.github === 'loading' ? 'Testing...' : testStatus.github === 'success' ? 'Success' : testStatus.github === 'error' ? 'Error' : 'Test Connection'}
-                        </Button>
-                      )}
-                      {meta.type === 'github' && testStatus.github === 'error' && (
-                        <span className="text-xs text-red-600 ml-2">{testError.github}</span>
-                      )}
                       <Link href="/dashboard/integrations">
                         <Button size="small" variant="neutral-tertiary" className="ml-2">Manage</Button>
                       </Link>
@@ -219,7 +257,7 @@ export default function DashboardHomePage() {
                   <IconWithBackground size="large" icon={<FeatherLink />} />
                   <span className="text-base text-subtext-color">No integrations connected yet.</span>
                   <Link href="/dashboard/integrations">
-                    <Button className="text-sm px-4 py-2">Connect your first integration</Button>
+                    <Button className="text-sm px-4 py-2">Connect Integration</Button>
                   </Link>
                 </div>
               )}
@@ -227,52 +265,30 @@ export default function DashboardHomePage() {
           )}
         </div>
       </div>
-      <div className="flex w-full flex-col items-start gap-3 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6">
-        <span className="text-lg font-semibold text-default-font mb-1">
-          Getting Started Checklist
-        </span>
-        <div className="flex w-full flex-col items-start gap-2">
-          <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border py-3">
-            <span className="text-base text-default-font">
-              Connect an integration (Jira, GitHub, etc.)
-            </span>
-            <Link href="/dashboard/integrations">
-              <Button variant="neutral-tertiary" className="text-sm px-3 py-1">
-                Setup
-              </Button>
+      {/* Recent Activity */}
+      <div className="w-full rounded-xl border border-neutral-200 bg-white px-8 py-6 flex flex-col gap-2">
+        <span className="text-lg font-semibold text-default-font mb-1">Recent Activity</span>
+        {recentNote ? (
+          <div className="flex flex-col gap-1">
+            <span className="text-base font-medium text-default-font">{recentNote.title}</span>
+            <span className="text-xs text-neutral-500">{new Date(recentNote.created_at).toLocaleDateString()} &middot; {recentNote.status.charAt(0).toUpperCase() + recentNote.status.slice(1)}</span>
+            <Link href={`/dashboard/releases/edit/${recentNote.id}`} className="mt-1">
+              <Button size="small" variant="neutral-secondary">View/Edit</Button>
             </Link>
           </div>
-          <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border py-3">
-            <span className="text-base text-default-font">
-              Configure your AI Context
-            </span>
-            <Link href="/dashboard/ai-context">
-              <Button variant="neutral-tertiary" className="text-sm px-3 py-1">
-                Configure
-              </Button>
-            </Link>
-          </div>
-          <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border py-3">
-            <span className="text-base text-default-font">
-              Create your first Release Note
-            </span>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <span className="text-base text-neutral-400">No recent activity yet. Once you publish release notes, you’ll see them here!</span>
             <Link href="/dashboard/releases/start">
-              <Button variant="neutral-tertiary" className="text-sm px-3 py-1">
-                Create
-              </Button>
+              <Button size="small" variant="brand-primary">Create a Release Note</Button>
             </Link>
           </div>
-          <div className="flex w-full items-center justify-between py-3">
-            <span className="text-base text-default-font">
-              Explore and manage Templates
-            </span>
-            <Link href="/dashboard/templates">
-              <Button variant="neutral-tertiary" className="text-sm px-3 py-1">
-                Templates
-              </Button>
-            </Link>
-          </div>
-        </div>
+        )}
+      </div>
+      {/* Tips Section */}
+      <div className="w-full rounded-xl border border-neutral-200 bg-white px-8 py-6 flex flex-col gap-2">
+        <span className="text-lg font-semibold text-default-font mb-1">Did you know?</span>
+        <span className="text-base text-neutral-400">{tip}</span>
       </div>
     </div>
   );

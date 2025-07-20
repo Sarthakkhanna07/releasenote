@@ -95,28 +95,29 @@ export default function SettingsPageComponent() {
   }
 
   return (
-    <div className="space-y-8 p-8 bg-default-background min-h-screen">
-      <h1 className="text-2xl font-bold text-default-font">Settings</h1>
-      <p className="text-sm text-subtext-color mb-4">
-        Configure default templates, user preferences, and other settings.
-      </p>
-      <div className="bg-white border border-neutral-200 rounded-xl px-8 py-8">
-        <h2 className="text-xl font-bold text-default-font mb-4">Organization Branding</h2>
-        <LogoFaviconUploader
-          orgId={user.id}
-          logoUrl={logoUrl}
-          faviconUrl={faviconUrl}
-          onChange={(type, url) => {
-            if (type === 'logo') setLogoUrl(url)
-            else setFaviconUrl(url)
-          }}
-        />
-      </div>
-      <div className="bg-white border border-neutral-200 rounded-xl px-8 py-8">
-        <h2 className="text-xl font-bold text-default-font mb-4">Default Release Note Template</h2>
-        <p className="text-sm text-neutral-500 mb-4">
-          Choose a default template for new release notes. This can be overridden during creation.
-        </p>
+    <div className="w-full min-h-screen bg-default-background flex flex-col items-center py-12 px-4">
+      <div className="w-full max-w-3xl flex flex-col gap-10">
+        <div className="flex flex-col gap-2 mb-2">
+          <span className="text-3xl font-bold text-default-font">Settings</span>
+          <span className="text-base text-neutral-500">Configure branding, templates, domains, and more.</span>
+        </div>
+        {/* Organization Branding */}
+        <div className="bg-white border border-neutral-200 rounded-2xl px-8 py-8 flex flex-col gap-4 shadow-sm">
+          <span className="text-xl font-semibold text-default-font mb-2">Organization Branding</span>
+          <LogoFaviconUploader
+            orgId={user.id}
+            logoUrl={logoUrl}
+            faviconUrl={faviconUrl}
+            onChange={(type, url) => {
+              if (type === 'logo') setLogoUrl(url)
+              else setFaviconUrl(url)
+            }}
+          />
+        </div>
+        {/* Default Template */}
+        <div className="bg-white border border-neutral-200 rounded-2xl px-8 py-8 flex flex-col gap-4 shadow-sm">
+          <span className="text-xl font-semibold text-default-font mb-2">Default Release Note Template</span>
+          <span className="text-base text-neutral-500 mb-2">Choose a default template for new release notes. This can be overridden during creation.</span>
           {isLoadingTemplates ? (
             <div className="text-neutral-400">Loading templates...</div>
           ) : (
@@ -141,7 +142,7 @@ export default function SettingsPageComponent() {
                     {templates.map((template) => (
                       <div
                         key={template.id}
-                        className={`p-4 border rounded-lg cursor-pointer ${
+                        className={`p-4 border rounded-lg cursor-pointer flex flex-col gap-1 transition ${
                           defaultTemplateId === template.id
                             ? 'border-brand-600 bg-brand-50'
                             : 'border-neutral-200 bg-white hover:border-neutral-300'
@@ -152,46 +153,43 @@ export default function SettingsPageComponent() {
                           <div className="flex items-center space-x-3">
                             <span className="text-2xl">{template.icon || '📝'}</span>
                             <div>
-                              <h3 className="font-medium text-default-font">{template.name}</h3>
-                              <p className="text-sm text-neutral-500">{template.description}</p>
+                              <span className="font-medium text-default-font text-lg">{template.name}</span>
+                              <span className="text-sm text-neutral-500">{template.description}</span>
                             </div>
                           </div>
                           {defaultTemplateId === template.id && (
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded-full">
-                                Default
-                              </span>
-                            </div>
+                            <span className="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded-full font-semibold">Default</span>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
+                  <div className="flex justify-between items-center pt-4 border-t border-neutral-200 mt-2">
                     <Link
                       href="/dashboard/templates"
-                      className="text-sm text-brand-600 hover:text-brand-500"
+                      className="text-sm text-brand-600 hover:text-brand-500 font-medium"
                     >
                       Manage all templates &rarr;
                     </Link>
                     {isSavingTemplate && (
-                      <span className="text-sm text-neutral-400">Saving...</span>
+                      <span className="text-sm text-brand-600 font-medium">Saving...</span>
                     )}
                   </div>
                 </>
               )}
             </div>
           )}
-      </div>
-      {/* Domain Settings */}
-      <div className="bg-white border border-neutral-200 rounded-xl px-8 py-8">
-        <h2 className="text-xl font-bold text-default-font mb-4">Domain Settings</h2>
-        <DomainSettingsSection userId={user.id} />
-      </div>
-      {/* SSO Settings */}
-      <div className="bg-white border border-neutral-200 rounded-xl px-8 py-8">
-        <h2 className="text-xl font-bold text-default-font mb-4">SSO Settings</h2>
-        <SSOSettingsSection userId={user.id} />
+        </div>
+        {/* Domain Settings */}
+        <div className="bg-white border border-neutral-200 rounded-2xl px-8 py-8 flex flex-col gap-4 shadow-sm">
+          <span className="text-xl font-semibold text-default-font mb-2">Domain Settings</span>
+          <DomainSettingsSection userId={user.id} />
+        </div>
+        {/* SSO Settings */}
+        <div className="bg-white border border-neutral-200 rounded-2xl px-8 py-8 flex flex-col gap-4 shadow-sm">
+          <span className="text-xl font-semibold text-default-font mb-2">SSO Settings</span>
+          <SSOSettingsSection userId={user.id} />
+        </div>
       </div>
     </div>
   )
@@ -237,15 +235,16 @@ function DomainSettingsSection({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
+      <span className="block text-base text-neutral-500 mb-2">Set up a custom domain for your public release notes portal. This helps your brand look professional and trustworthy.</span>
       {loading ? (
-        <span className="text-gray-500">Loading domain settings...</span>
+        <span className="text-neutral-500">Loading domain settings...</span>
       ) : error ? (
         <span className="text-red-500">{error}</span>
       ) : (
         <>
           <div>
-            <label className="block text-sm font-medium">Public Portal URL</label>
+            <label className="block text-sm font-semibold text-default-font">Public Portal URL</label>
             <input
               className="w-full mt-1 rounded border px-3 py-2 bg-gray-100 text-gray-700"
               value={publicUrl}
@@ -254,9 +253,9 @@ function DomainSettingsSection({ userId }: { userId: string }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Custom Domain</label>
+            <label className="block text-sm font-semibold text-default-font">Custom Domain</label>
             <input
-              className="w-full mt-1 rounded border px-3 py-2"
+              className="w-full mt-1 rounded border px-3 py-2 text-default-font"
               value={customDomain}
               onChange={e => setCustomDomain(e.target.value)}
               placeholder="yourcompany.com"
@@ -264,7 +263,7 @@ function DomainSettingsSection({ userId }: { userId: string }) {
             />
           </div>
           <button
-            className="mt-2 px-4 py-2 rounded bg-primary-600 text-white disabled:opacity-60"
+            className="mt-2 px-4 py-2 rounded bg-brand-600 text-white font-semibold disabled:opacity-60"
             onClick={handleSave}
             disabled={saving}
           >
@@ -316,17 +315,18 @@ function SSOSettingsSection({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
+      <span className="block text-base text-neutral-500 mb-2">Configure Single Sign-On (SSO) for secure, seamless access to your release notes portal.</span>
       {loading ? (
-        <span className="text-gray-500">Loading SSO settings...</span>
+        <span className="text-neutral-500">Loading SSO settings...</span>
       ) : error ? (
         <span className="text-red-500">{error}</span>
       ) : (
         <>
           <div>
-            <label className="block text-sm font-medium">SSO URL</label>
+            <label className="block text-sm font-semibold text-default-font">SSO URL</label>
             <input
-              className="w-full mt-1 rounded border px-3 py-2"
+              className="w-full mt-1 rounded border px-3 py-2 text-default-font"
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="https://sso.provider.com/..."
@@ -334,9 +334,9 @@ function SSOSettingsSection({ userId }: { userId: string }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">SSO Code</label>
+            <label className="block text-sm font-semibold text-default-font">SSO Code</label>
             <input
-              className="w-full mt-1 rounded border px-3 py-2"
+              className="w-full mt-1 rounded border px-3 py-2 text-default-font"
               value={code}
               onChange={e => setCode(e.target.value)}
               placeholder="SSO Code"
@@ -344,7 +344,7 @@ function SSOSettingsSection({ userId }: { userId: string }) {
             />
           </div>
           <button
-            className="mt-2 px-4 py-2 rounded bg-primary-600 text-white disabled:opacity-60"
+            className="mt-2 px-4 py-2 rounded bg-brand-600 text-white font-semibold disabled:opacity-60"
             onClick={handleSave}
             disabled={saving}
           >

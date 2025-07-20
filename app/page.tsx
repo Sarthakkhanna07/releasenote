@@ -128,19 +128,31 @@ function ReleaseNoteLanding() {
           <span className="font-['Inter'] text-[32px] font-[600] leading-[40px] text-default-font text-center -tracking-[0.03em]">
             Trusted by Leading Teams
           </span>
-          <div className="flex w-full items-center justify-center gap-12">
-            <img
-              className="h-8 flex-none object-cover grayscale opacity-80"
-              src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128"
-            />
-            <img
-              className="h-8 flex-none object-cover grayscale opacity-80"
-              src="https://images.unsplash.com/photo-1611162616305-c69b3037f72d?w=128"
-            />
-            <img
-              className="h-8 flex-none object-cover grayscale opacity-80"
-              src="https://images.unsplash.com/photo-1611162618071-b39a2ec055fb?w=128"
-            />
+          {/* Animated marquee of company names */}
+          <div className="relative w-full overflow-hidden py-2">
+            <div className="animate-marquee whitespace-nowrap flex items-center gap-12">
+              <span className="text-xl font-semibold text-neutral-500 px-4">Google</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Microsoft</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Stripe</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Shopify</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Notion</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Atlassian</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Slack</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Zoom</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">GitHub</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Salesforce</span>
+              {/* Repeat for seamless loop */}
+              <span className="text-xl font-semibold text-neutral-500 px-4">Google</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Microsoft</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Stripe</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Shopify</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Notion</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Atlassian</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Slack</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Zoom</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">GitHub</span>
+              <span className="text-xl font-semibold text-neutral-500 px-4">Salesforce</span>
+            </div>
           </div>
           <div className="w-full items-start gap-8 grid grid-cols-2">
             <div className="flex flex-col items-start gap-4 rounded-lg border border-solid border-neutral-200 bg-white px-8 py-8">
@@ -218,7 +230,8 @@ function ReleaseNoteLanding() {
           <div className="flex items-center gap-4">
             <img
               className="h-6 w-6 flex-none object-cover"
-              src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=24"
+              src="/logo.svg"
+              alt="ReleaseNoteAI Logo"
             />
             <span className="font-['Inter'] text-[14px] font-[400] leading-[20px] text-neutral-400">
               © 2025 ReleaseNoteAI. All rights reserved.
@@ -232,6 +245,16 @@ function ReleaseNoteLanding() {
           </div>
         </div>
       </div>
+      {/* Add marquee animation styles */}
+      <style jsx global>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 30s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }

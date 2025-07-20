@@ -28,10 +28,10 @@ export default function ReleaseJourneyStart() {
       <div className="flex h-full w-full flex-col items-start">
         <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border px-6 py-6">
           <div className="flex flex-col items-start gap-2">
-            <span className="text-heading-1 font-heading-1 text-default-font">
+            <span className="text-3xl font-bold text-default-font">
               Release Notes Creator
             </span>
-            <span className="text-body font-body text-subtext-color">
+            <span className="text-base text-neutral-500">
               Choose your path to creating compelling release notes
             </span>
           </div>
@@ -39,18 +39,18 @@ export default function ReleaseJourneyStart() {
         <div className="flex w-full grow shrink-0 basis-0 flex-col items-center gap-16 bg-default-background px-6 py-16">
           <div className="flex w-full max-w-[1024px] flex-col items-center gap-8">
             <div className="flex flex-col items-center gap-4 text-center">
-              <span className="text-heading-1 font-heading-1 text-brand-600">
+              <span className="text-2xl font-bold text-brand-600">
                 Every great product deserves great release notes
               </span>
-              <span className="text-heading-3 font-heading-3 text-neutral-500">
+              <span className="text-lg text-neutral-500">
                 Choose your preferred way to craft the perfect release notes
               </span>
             </div>
             <Alert
               variant="brand"
               icon={<FeatherZap />}
-              title="Start Your Release Notes Journey"
-              description="Whether you prefer AI assistance, proven templates, or starting from scratch, we've got you covered. Select the path that best matches your style."
+              title={<span className="text-lg font-semibold">Start Your Release Notes Journey</span>}
+              description={<span className="text-base text-neutral-600">Whether you prefer AI assistance, proven templates, or starting from scratch, we've got you covered. Select the path that best matches your style.</span>}
               actions={
                 <IconButton
                   size="medium"
@@ -73,12 +73,11 @@ export default function ReleaseJourneyStart() {
                       <Badge>Recommended</Badge>
                     </div>
                     <div className="flex w-full flex-col items-start gap-2">
-                      <span className="text-heading-2 font-heading-2 text-default-font">
+                      <span className="text-xl font-bold text-default-font">
                         Create with AI
                       </span>
-                      <span className="text-body-bold font-body-bold text-subtext-color">
-                        Let our AI assistant transform your changes into
-                        polished release notes automatically
+                      <span className="text-base text-neutral-500">
+                        Let our AI assistant transform your changes into polished release notes automatically
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -92,7 +91,7 @@ export default function ReleaseJourneyStart() {
                         Integration
                       </Badge>
                     </div>
-                  </div>
+      </div>
                   <Link href="/dashboard/releases/new/ai" passHref legacyBehavior>
                     <Button icon={<FeatherArrowRight />}>Start with AI</Button>
                   </Link>
@@ -107,12 +106,11 @@ export default function ReleaseJourneyStart() {
                       square={true}
                     />
                     <div className="flex w-full flex-col items-start gap-2">
-                      <span className="text-heading-2 font-heading-2 text-default-font">
+                      <span className="text-xl font-bold text-default-font">
                         Use Template
                       </span>
-                      <span className="text-body-bold font-body-bold text-subtext-color">
-                        Start with a proven structure and customize it to your
-                        needs
+                      <span className="text-base text-neutral-500">
+                        Start with a proven structure and customize it to your needs
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -141,12 +139,11 @@ export default function ReleaseJourneyStart() {
                       square={true}
                     />
                     <div className="flex w-full flex-col items-start gap-2">
-                      <span className="text-heading-2 font-heading-2 text-default-font">
+                      <span className="text-xl font-bold text-default-font">
                         Start Fresh
                       </span>
-                      <span className="text-body-bold font-body-bold text-subtext-color">
-                        Begin with a blank canvas and craft your perfect release
-                        notes
+                      <span className="text-base text-neutral-500">
+                        Begin with a blank canvas and craft your perfect release notes
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -163,7 +160,7 @@ export default function ReleaseJourneyStart() {
                   </div>
                   <Link href="/dashboard/releases/new/scratch" passHref legacyBehavior>
                     <Button variant="neutral-primary" icon={<FeatherArrowRight />}>Start from scratch</Button>
-                  </Link>
+              </Link>
                 </div>
               </div>
             </div>

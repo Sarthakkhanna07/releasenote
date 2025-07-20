@@ -73,14 +73,17 @@ export default function LoginPage() {
               }}
             />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+          <h2 className="mt-6 text-3xl font-bold text-default-font">
             Sign in to your account
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-base text-neutral-500">
+            Welcome back! Sign in to manage your release notes and integrations.
+          </p>
+          <p className="mt-2 text-base text-neutral-500">
             Or{' '}
             <Link
               href="/signup"
-              className="font-medium text-[#7F56D9] hover:text-[#6941C6]"
+              className="font-medium text-brand-600 hover:text-brand-700"
             >
               create a new account
             </Link>
@@ -89,7 +92,7 @@ export default function LoginPage() {
 
         <Card className="border-[#e4e7ec]">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-center">
+            <CardTitle className="text-lg font-semibold text-center text-default-font">
               {success ? 'Check your email!' : 'Welcome back'}
             </CardTitle>
           </CardHeader>
@@ -100,10 +103,10 @@ export default function LoginPage() {
                   <MailIcon className="w-8 h-8 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-base text-green-700 mb-2">
                     We've sent a magic link to <strong>{email}</strong>
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-neutral-500">
                     Click the link in your email to sign in. It may take a few minutes to arrive.
                   </p>
                 </div>
@@ -120,14 +123,14 @@ export default function LoginPage() {
                 {error && (
                   <Alert variant="destructive">
                     <AlertTriangleIcon className="h-4 w-4" />
-                    <AlertDescription className="ml-2">
+                    <AlertDescription className="ml-2 text-base text-red-600 font-medium">
                       {error}
                     </AlertDescription>
                   </Alert>
                 )}
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-base font-medium text-default-font mb-1">
                     Email address
                   </label>
                   <Input
@@ -144,7 +147,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-base text-neutral-500 mb-4">
                     We'll send you a magic link for a password-free sign in.
                   </p>
                 </div>
@@ -152,7 +155,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-[#7F56D9] text-white hover:bg-[#6941C6] disabled:opacity-50"
+                  className="w-full"
                 >
                   {isLoading ? 'Sending magic link...' : 'Send magic link'}
                 </Button>

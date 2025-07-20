@@ -125,44 +125,44 @@ export default function OnboardingPage() {
               className="h-8 w-auto"
             />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+          <h2 className="mt-6 text-3xl font-bold text-default-font">
             Welcome to Release Notes AI
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Let's set up your organization to get started
+          <p className="mt-2 text-base text-neutral-500">
+            Let’s get your organization set up in just a few steps. You’ll be publishing beautiful release notes in minutes!
           </p>
         </div>
 
         {/* Progress */}
         <div className="flex items-center justify-center space-x-4">
-          <div className={`flex items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step >= 1 ? 'text-brand-600' : 'text-neutral-400'}`}> 
             {step > 1 ? <CheckCircle className="w-5 h-5" /> : <User className="w-5 h-5" />}
-            <span className="ml-2 text-sm">Profile</span>
+            <span className="ml-2 text-base font-medium">Profile</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-gray-400" />
-          <div className={`flex items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+          <ArrowRight className="w-4 h-4 text-neutral-400" />
+          <div className={`flex items-center ${step >= 2 ? 'text-brand-600' : 'text-neutral-400'}`}> 
             <Building2 className="w-5 h-5" />
-            <span className="ml-2 text-sm">Organization</span>
+            <span className="ml-2 text-base font-medium">Organization</span>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">
+            <CardTitle className="text-center text-xl font-semibold text-default-font">
               {step === 1 ? 'Tell us about yourself' : 'Create your organization'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {error && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="text-base text-red-600 font-medium">{error}</AlertDescription>
               </Alert>
             )}
 
             {step === 1 ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-base font-medium text-default-font mb-1">
                     First Name *
                   </label>
                   <Input
@@ -173,7 +173,7 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-base font-medium text-default-font mb-1">
                     Last Name
                   </label>
                   <Input
@@ -193,7 +193,7 @@ export default function OnboardingPage() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-base font-medium text-default-font mb-1">
                     Organization Name *
                   </label>
                   <Input
@@ -204,11 +204,11 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-base font-medium text-default-font mb-1">
                     Organization URL
                   </label>
                   <div className="flex">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-neutral-200 bg-neutral-100 text-neutral-500 text-base">
                       yourapp.com/notes/
                     </span>
                     <Input
@@ -218,7 +218,7 @@ export default function OnboardingPage() {
                       className="rounded-l-none"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-neutral-500 mt-1">
                     This will be your public release notes URL
                   </p>
                 </div>
@@ -244,8 +244,8 @@ export default function OnboardingPage() {
         </Card>
 
         <div className="text-center">
-          <p className="text-xs text-gray-500">
-            Need help? Contact support at help@releasenotes.ai
+          <p className="text-xs text-neutral-400">
+            Need help? Contact support at <span className="underline">help@releasenotes.ai</span>
           </p>
         </div>
       </div>

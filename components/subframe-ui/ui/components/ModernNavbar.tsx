@@ -67,8 +67,9 @@ const ModernNavbarRoot = React.forwardRef<HTMLElement, ModernNavbarRootProps>(
       >
         <div className="flex h-12 flex-col items-start justify-center gap-2 px-4">
           <img
-            className="h-4 flex-none object-cover"
-            src="https://res.cloudinary.com/subframe/image/upload/v1711417507/shared/y2rsnhq3mex4auk54aye.png"
+            className="h-8 flex-none object-cover"
+            src="/logo.svg"
+            alt="ReleaseNoteAI Logo"
           />
         </div>
         <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-wrap items-center gap-6">

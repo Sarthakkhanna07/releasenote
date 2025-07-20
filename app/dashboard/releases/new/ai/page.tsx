@@ -90,7 +90,7 @@ export default function AIReleaseNotePage() {
               Transform your code changes and tickets into professional release
               notes
             </span>
-          </div>
+        </div>
           <div className="flex w-full flex-col items-start gap-4">
             <span className="text-body-bold font-body-bold text-default-font">
               Choose Integration Source
@@ -99,15 +99,15 @@ export default function AIReleaseNotePage() {
               <Tabs.Item
                 active={activeTab === 'github'}
                 icon={<FeatherGithub />}
-                onClick={() => setActiveTab('github')}
+                  onClick={() => setActiveTab('github')}
               >
                 GitHub
               </Tabs.Item>
               <Tabs.Item
                 active={activeTab === 'jira'}
                 icon={<FeatherTrello />}
-                onClick={() => setActiveTab('jira')}
-              >
+                  onClick={() => setActiveTab('jira')}
+                >
                 Jira
               </Tabs.Item>
             </Tabs>
@@ -115,14 +115,14 @@ export default function AIReleaseNotePage() {
         </div>
         <div className="container max-w-none flex w-full grow shrink-0 basis-0 flex-col items-start gap-8 bg-default-background py-12 overflow-auto">
           <div className="flex w-full max-w-[1024px] flex-col items-start gap-8">
-            {activeTab === 'github' ? (
-              <GitHubReleaseGenerator />
-            ) : (
+          {activeTab === 'github' ? (
+            <GitHubReleaseGenerator />
+          ) : (
               <JiraReleaseGenerator />
             )}
           </div>
         </div>
-      </div>
+    </div>
     </DefaultPageLayout>
   )
-}
+} 

@@ -92,20 +92,19 @@ export default function ReleaseNotesPage() {
   return (
     <div className="flex h-full w-full flex-col items-start">
       <div className="container max-w-none flex w-full grow shrink-0 basis-0 flex-col items-start gap-8 bg-default-background py-12">
-        <div className="flex w-full flex-col items-start gap-6">
-          <div className="flex w-full flex-wrap items-center gap-2 mobile:flex-col mobile:flex-wrap mobile:items-start mobile:justify-start mobile:gap-2">
-            <div className="flex grow shrink-0 basis-0 flex-col items-start gap-1">
-              <span className="w-full text-heading-2 font-heading-2 text-default-font">
-                Release Notes
-              </span>
-              <span className="text-body font-body text-subtext-color">
-                Manage and publish your product updates
-              </span>
+        {/* Main Content Card */}
+        <div className="w-full rounded-xl border border-neutral-200 bg-white px-8 py-8 flex flex-col gap-6">
+          {/* Header Row */}
+          <div className="flex w-full items-center justify-between gap-4 mb-2">
+            <div className="flex flex-col gap-1">
+              <span className="text-3xl font-bold text-default-font">Release Notes</span>
+              <span className="text-base text-neutral-500">Manage and publish your product updates</span>
             </div>
-            <Button onClick={() => router.push('/dashboard/releases/start')}>
+            <Button variant="brand-primary" size="large" onClick={() => router.push('/dashboard/releases/start')}>
               Create New Release
             </Button>
           </div>
+          {/* Search and Tabs */}
           <div className="flex w-full flex-wrap items-center gap-2">
             <TextField
               className="h-auto w-64 flex-none"
@@ -131,91 +130,92 @@ export default function ReleaseNotesPage() {
             <Tabs.Item active={activeTab === "scheduled"} onClick={() => setActiveTab("scheduled")}>Scheduled {tabCounts.scheduled > 0 && `(${tabCounts.scheduled})`}</Tabs.Item>
             <Tabs.Item active={activeTab === "published"} onClick={() => setActiveTab("published")}>Published {tabCounts.published > 0 && `(${tabCounts.published})`}</Tabs.Item>
           </Tabs>
-        </div>
-        <div className="flex w-full flex-col items-start gap-6 overflow-hidden overflow-x-auto">
-          <Table
-            header={
-              <Table.HeaderRow>
-                <Table.HeaderCell>Title</Table.HeaderCell>
-                <Table.HeaderCell>Status</Table.HeaderCell>
-                <Table.HeaderCell>Version</Table.HeaderCell>
-                <Table.HeaderCell>Last Updated</Table.HeaderCell>
-                <Table.HeaderCell>Views</Table.HeaderCell>
-                <Table.HeaderCell />
-              </Table.HeaderRow>
-            }
-          >
-            {filteredReleaseNotes.length === 0 ? (
-              <Table.Row>
-                <Table.Cell colSpan={6}>
-                  <span className="text-body font-body text-neutral-500">No release notes found.</span>
-                </Table.Cell>
-              </Table.Row>
-            ) : (
-              filteredReleaseNotes.map((note) => (
-                <Table.Row key={note.id}>
-                  <Table.Cell>
-                    <span className="text-body-bold font-body-bold text-default-font">
-                      {note.title || 'Untitled Release Note'}
-                    </span>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Badge variant={note.status === 'published' ? 'success' : note.status === 'scheduled' ? 'warning' : note.status === 'draft' ? 'neutral' : 'brand'}>
-                      {note.status.charAt(0).toUpperCase() + note.status.slice(1)}
-                    </Badge>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <span className="text-body font-body text-neutral-500">
-                      {note.version || '-'}
-                    </span>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <span className="text-body font-body text-neutral-500">
-                      {note.updated_at ? new Date(note.updated_at).toLocaleDateString() : '-'}
-                    </span>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <span className="text-body font-body text-neutral-500">
-                      {note.views ?? '-'}
-                    </span>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <div className="flex grow shrink-0 basis-0 items-center justify-end">
-                      <SubframeCore.DropdownMenu.Root>
-                        <SubframeCore.DropdownMenu.Trigger asChild={true}>
-                          <IconButton
-                            icon={<FeatherMoreHorizontal />}
-                            onClick={() => {}}
-                          />
-                        </SubframeCore.DropdownMenu.Trigger>
-                        <SubframeCore.DropdownMenu.Portal>
-                          <SubframeCore.DropdownMenu.Content
-                            side="bottom"
-                            align="end"
-                            sideOffset={4}
-                            asChild={true}
-                          >
-                            <DropdownMenu>
-                              <DropdownMenu.DropdownItem icon={<FeatherEye />} onClick={() => handleAction('view', note)}>
-                                View
-                              </DropdownMenu.DropdownItem>
-                              <DropdownMenu.DropdownItem icon={<FeatherEdit2 />} onClick={() => handleAction('edit', note)}>
-                                Edit
-                              </DropdownMenu.DropdownItem>
-                              <DropdownMenu.DropdownDivider />
-                              <DropdownMenu.DropdownItem icon={<FeatherTrash />} onClick={() => handleDelete(note.id)}>
-                                Delete
-                              </DropdownMenu.DropdownItem>
-                            </DropdownMenu>
-                          </SubframeCore.DropdownMenu.Content>
-                        </SubframeCore.DropdownMenu.Portal>
-                      </SubframeCore.DropdownMenu.Root>
-                    </div>
-                  </Table.Cell>
-                </Table.Row>
-              ))
-            )}
-          </Table>
+          {/* Empty State or Table */}
+          {filteredReleaseNotes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 w-full">
+              <span className="text-2xl font-bold text-neutral-500">No release notes found</span>
+              <span className="text-base text-neutral-400">Start by creating your first release note.</span>
+              <Button variant="brand-primary" size="large" className="mt-2" onClick={() => router.push('/dashboard/releases/start')}>Create Release Note</Button>
+            </div>
+          ) : (
+            <div className="flex w-full flex-col items-start gap-6 overflow-hidden overflow-x-auto">
+              <Table
+                header={
+                  <Table.HeaderRow>
+                    <Table.HeaderCell>Title</Table.HeaderCell>
+                    <Table.HeaderCell>Status</Table.HeaderCell>
+                    <Table.HeaderCell>Version</Table.HeaderCell>
+                    <Table.HeaderCell>Last Updated</Table.HeaderCell>
+                    <Table.HeaderCell>Views</Table.HeaderCell>
+                    <Table.HeaderCell />
+                  </Table.HeaderRow>
+                }
+              >
+                {filteredReleaseNotes.map((note) => (
+                  <Table.Row key={note.id} className="hover:bg-neutral-50 transition">
+                    <Table.Cell>
+                      <span className="text-lg font-bold text-default-font">
+                        {note.title || 'Untitled Release Note'}
+                      </span>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Badge variant={note.status === 'published' ? 'success' : note.status === 'scheduled' ? 'warning' : note.status === 'draft' ? 'neutral' : 'brand'}>
+                        {note.status.charAt(0).toUpperCase() + note.status.slice(1)}
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <span className="text-base text-neutral-500">
+                        {note.version || '-'}
+                      </span>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <span className="text-base text-neutral-500">
+                        {note.updated_at ? new Date(note.updated_at).toLocaleDateString() : '-'}
+                      </span>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <span className="text-base text-neutral-500">
+                        {note.views ?? '-'}
+                      </span>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <div className="flex grow shrink-0 basis-0 items-center justify-end">
+                        <SubframeCore.DropdownMenu.Root>
+                          <SubframeCore.DropdownMenu.Trigger asChild={true}>
+                            <IconButton
+                              icon={<FeatherMoreHorizontal />}
+                              aria-label="More actions"
+                            />
+                          </SubframeCore.DropdownMenu.Trigger>
+                          <SubframeCore.DropdownMenu.Portal>
+                            <SubframeCore.DropdownMenu.Content
+                              side="bottom"
+                              align="end"
+                              sideOffset={4}
+                              asChild={true}
+                            >
+                              <DropdownMenu>
+                                <DropdownMenu.DropdownItem icon={<FeatherEye />} onClick={() => handleAction('view', note)} title="View Public Page">
+                                  View
+                                </DropdownMenu.DropdownItem>
+                                <DropdownMenu.DropdownItem icon={<FeatherEdit2 />} onClick={() => handleAction('edit', note)} title="Edit Release Note">
+                                  Edit
+                                </DropdownMenu.DropdownItem>
+                                <DropdownMenu.DropdownDivider />
+                                <DropdownMenu.DropdownItem icon={<FeatherTrash />} onClick={() => handleDelete(note.id)} title="Delete Release Note">
+                                  Delete
+                                </DropdownMenu.DropdownItem>
+                              </DropdownMenu>
+                            </SubframeCore.DropdownMenu.Content>
+                          </SubframeCore.DropdownMenu.Portal>
+                        </SubframeCore.DropdownMenu.Root>
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table>
+            </div>
+          )}
         </div>
       </div>
     </div>
