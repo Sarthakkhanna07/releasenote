@@ -17,11 +17,13 @@ import {
   RefreshCwIcon,
   CheckCircleIcon,
   AlertTriangleIcon,
-  PlusIcon
+  PlusIcon,
+  ArrowLeftIcon
 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/store/use-auth'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import type { Repository } from '@/components/integrations/github-repository-manager'
 
 interface Integration {
   id: string
@@ -57,9 +59,9 @@ interface ConnectionTest {
 export default function IntegrationManagePage() {
   const [activeTab, setActiveTab] = useState('overview')
   const [integrations, setIntegrations] = useState<Integration[]>([])
-  const [selectedRepositories, setSelectedRepositories] = useState([])
-  const [selectedJiraProjects, setSelectedJiraProjects] = useState([])
-  const [selectedLinearTeams, setSelectedLinearTeams] = useState([])
+  const [selectedRepositories, setSelectedRepositories] = useState<Repository[]>([])
+  const [selectedJiraProjects, setSelectedJiraProjects] = useState<string[]>([])
+  const [selectedLinearTeams, setSelectedLinearTeams] = useState<string[]>([])
   const [connectionTest, setConnectionTest] = useState<ConnectionTest | null>(null)
   const [loading, setLoading] = useState(true)
   const [testing, setTesting] = useState(false)
@@ -192,13 +194,21 @@ export default function IntegrationManagePage() {
     <div className="flex flex-col gap-8 pt-8 pb-12 px-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#101828] mb-2">
-            Integration Management
-          </h1>
-          <p className="text-[#667085]">
-            Manage your connected services and repository access
-          </p>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard/integrations">
+            <Button variant="outline" className="flex items-center gap-2">
+              <ArrowLeftIcon className="w-4 h-4" />
+              Back to Integrations
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-[#101828] mb-2">
+              Integration Management
+            </h1>
+            <p className="text-[#667085]">
+              Manage your connected services and repository access
+            </p>
+          </div>
         </div>
         <Link href="/integrations">
           <Button variant="outline">
@@ -206,6 +216,15 @@ export default function IntegrationManagePage() {
             Add Integration
           </Button>
         </Link>
+      </div>
+      {/* Info box for advanced management context */}
+      <div className="w-full max-w-3xl mt-2 mb-4">
+        <div className="flex items-start gap-3 rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-blue-900">
+          <AlertTriangleIcon className="w-5 h-5 mt-1 text-blue-400" />
+          <div>
+            <span className="font-semibold">Advanced Management:</span> This page is for detailed configuration, diagnostics, and repository/project management. For most users, the <Link href='/dashboard/integrations' className='underline text-blue-700 hover:text-blue-900'>main Integrations page</Link> is recommended for everyday use.
+          </div>
+        </div>
       </div>
 
       {error && (

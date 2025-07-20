@@ -84,8 +84,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check for protected routes (including root dashboard)
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || 
-                          pathname === '/'
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
   
   if (isProtectedRoute) {
     try {

@@ -15,6 +15,9 @@ import { ErrorState } from "@/components/ui/error-state"
 import { TemplateSelector } from "@/components/ui/template-selector"
 import { ContentImprover } from "@/components/ui/content-improver"
 import { AI_TEMPLATES } from "@/lib/ai/templates"
+import { DefaultPageLayout, Tabs } from "@/components/subframe-ui/ui"
+import { FeatherGitBranch, FeatherGithub, FeatherTrello } from '@subframe/core'
+import { GitHubReleaseGenerator } from "@/components/features/GitHubReleaseGenerator"
 
 export default function CreateReleaseNotePage() {
   const [title, setTitle] = useState("")
@@ -27,6 +30,7 @@ export default function CreateReleaseNotePage() {
   const [error, setError] = useState<string | null>(null)
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
   const [showContentImprover, setShowContentImprover] = useState(false)
+  const [activeTab, setActiveTab] = useState<'github' | 'jira'>('github')
 
   const { createReleaseNote, generateWithAI, generateWithTemplate, improveContent } = useReleaseNotesActions()
   const templates = useReleaseNotesStore((state) => state.templates)
@@ -129,219 +133,262 @@ export default function CreateReleaseNotePage() {
   }
 
   return (
-    <section className="flex flex-col items-start gap-8 pt-8 pb-12 px-8 relative flex-1 grow bg-white">
-      <div className="flex flex-col gap-6 w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between w-full">
-          <h1 className="text-3xl font-bold text-[#101828]">
-            Create Release Note
-          </h1>
-          <div className="flex gap-3">
-            <Button variant="outline" className="border-[#d0d5dd]" onClick={handleSaveDraft}>
-              <SaveIcon className="w-4 h-4 mr-2" />
-              Save Draft
-            </Button>
-            <Button className="bg-[#7F56D9] text-white" onClick={handlePublish}>
-              <SendIcon className="w-4 h-4 mr-2" />
-              Publish Now
-            </Button>
+    <DefaultPageLayout>
+      {/* Header Section */}
+      <div className="flex w-full flex-col items-start gap-6 border-b border-solid border-neutral-border px-8 py-6">
+        <div className="flex grow shrink-0 basis-0 flex-col items-start gap-2">
+          <div className="flex items-center gap-3">
+            <FeatherGitBranch className="text-heading-1 font-heading-1 text-brand-600" />
+            <span className="text-heading-1 font-heading-1 text-brand-600">
+              Generate Release Notes
+            </span>
           </div>
+          <span className="text-heading-3 font-heading-3 text-neutral-500">
+            Transform your code changes into professional release notes
+          </span>
         </div>
+        <Tabs>
+          <Tabs.Item 
+            active={activeTab === 'github'} 
+            icon={<FeatherGithub />}
+            onClick={() => setActiveTab('github')}
+          >
+            GitHub
+          </Tabs.Item>
+          <Tabs.Item 
+            active={activeTab === 'jira'} 
+            icon={<FeatherTrello />}
+            onClick={() => setActiveTab('jira')}
+          >
+            Jira
+          </Tabs.Item>
+        </Tabs>
+      </div>
 
-        {/* Error Display */}
-        {error && (
-          <ErrorState
-            type="validation"
-            message={error}
-            onRetry={() => setError(null)}
-            showRetry={false}
-          />
-        )}
+      {/* Tab Content */}
+      {activeTab === 'github' ? (
+        <section className="container max-w-none flex w-full grow shrink-0 basis-0 flex-col items-start gap-8 bg-default-background py-12 overflow-auto">
+          <div className="flex w-full max-w-[1024px] flex-col items-start gap-8">
+            <GitHubReleaseGenerator />
+          </div>
+        </section>
+      ) : (
+        <div className="container max-w-none flex w-full grow shrink-0 basis-0 flex-col items-start gap-8 bg-default-background py-12 overflow-auto">
+          <div className="flex w-full max-w-[1024px] flex-col items-start gap-8">
+            <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+              <div className="flex flex-col gap-6 w-full">
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end w-full">
+              <div className="flex gap-3">
+                <Button variant="outline" className="border-[#d0d5dd]" onClick={handleSaveDraft}>
+                  <SaveIcon className="w-4 h-4 mr-2" />
+                  Save Draft
+                </Button>
+                <Button className="bg-[#7F56D9] text-white" onClick={handlePublish}>
+                  <SendIcon className="w-4 h-4 mr-2" />
+                  Publish Now
+                </Button>
+              </div>
+            </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-          {/* Editor Section */}
-          <div className="lg:col-span-2">
-            <Card className="border-[#e4e7ec] shadow-sm">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-[#101828]">Release Note Details</h2>
-                  <Button variant="outline" size="sm" onClick={handleAIGenerate}>
-                    <WandIcon className="w-4 h-4 mr-2" />
-                    AI Generate
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#344054] mb-2">
-                    Title
-                  </label>
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter release note title..."
-                    className="w-full"
-                  />
-                </div>
+            {/* Error Display */}
+            {error && (
+              <ErrorState
+                type="validation"
+                message={error}
+                onRetry={() => setError(null)}
+                showRetry={false}
+              />
+            )}
 
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-medium text-[#344054]">
-                      Template Style
-                    </label>
+            {/* Main Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
+              {/* Editor Section */}
+              <div className="lg:col-span-2">
+                <Card className="border-[#e4e7ec] shadow-sm">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold text-[#101828]">Release Note Details</h2>
+                      <Button variant="outline" size="sm" onClick={handleAIGenerate}>
+                        <WandIcon className="w-4 h-4 mr-2" />
+                        AI Generate
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-[#344054] mb-2">
+                        Title
+                      </label>
+                      <Input
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Enter release note title..."
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="block text-sm font-medium text-[#344054]">
+                          Template Style
+                        </label>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+                        >
+                          {showTemplateSelector ? 'Hide Templates' : 'Choose Template'}
+                        </Button>
+                      </div>
+                      
+                      {showTemplateSelector && (
+                        <div className="mb-4">
+                          <TemplateSelector
+                            templates={AI_TEMPLATES}
+                            selectedTemplateId={selectedTemplateId}
+                            onTemplateSelect={(templateId) => {
+                              setSelectedTemplateId(templateId)
+                              setShowTemplateSelector(false)
+                            }}
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md">
+                        <strong>Selected:</strong> {AI_TEMPLATES.find(t => t.id === selectedTemplateId)?.name || 'Traditional'}
+                        <br />
+                        <span className="text-xs text-gray-500">
+                          {AI_TEMPLATES.find(t => t.id === selectedTemplateId)?.description}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-[#344054] mb-2">
+                        Content
+                      </label>
+                      <RichTextEditor
+                        content={content}
+                        onChange={setContent}
+                        placeholder="Write your release note content here..."
+                        onAIGenerate={handleAIGenerate}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Settings Sidebar */}
+              <div className="space-y-6">
+                <Card className="border-[#e4e7ec] shadow-sm">
+                  <CardHeader className="pb-4">
+                    <h3 className="text-lg font-semibold text-[#101828]">Publishing Options</h3>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#344054] mb-2">
+                        Status
+                      </label>
+                      <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="scheduled">Scheduled</SelectItem>
+                          <SelectItem value="published">Published</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-[#344054] mb-2">
+                        Schedule Date
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type="datetime-local"
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                          className="w-full"
+                        />
+                        <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#667085] pointer-events-none" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-[#e4e7ec] shadow-sm">
+                  <CardHeader className="pb-4">
+                    <h3 className="text-lg font-semibold text-[#101828]">Categories</h3>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {['Feature', 'Bug Fix', 'Improvement', 'Security', 'Performance', 'Documentation'].map((category) => (
+                        <div key={category} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={category}
+                            checked={selectedCategories.includes(category)}
+                            onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
+                          />
+                          <label 
+                            htmlFor={category}
+                            className="text-sm text-[#344054] cursor-pointer"
+                          >
+                            {category}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-[#e4e7ec] shadow-sm">
+                  <CardHeader className="pb-4">
+                    <h3 className="text-lg font-semibold text-[#101828]">AI Assistant</h3>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button variant="outline" className="w-full justify-start" onClick={handleAIGenerate} disabled={isLoading}>
+                      <WandIcon className="w-4 h-4 mr-2" />
+                      Generate with Template
+                    </Button>
                     <Button 
                       variant="outline" 
-                      size="sm"
-                      onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+                      className="w-full justify-start" 
+                      onClick={() => setShowContentImprover(!showContentImprover)}
+                      disabled={isLoading}
                     >
-                      {showTemplateSelector ? 'Hide Templates' : 'Choose Template'}
+                      <WandIcon className="w-4 h-4 mr-2" />
+                      {showContentImprover ? 'Hide' : 'Show'} Content Analysis
                     </Button>
-                  </div>
-                  
-                  {showTemplateSelector && (
-                    <div className="mb-4">
-                      <TemplateSelector
-                        templates={AI_TEMPLATES}
-                        selectedTemplateId={selectedTemplateId}
-                        onTemplateSelect={(templateId) => {
-                          setSelectedTemplateId(templateId)
-                          setShowTemplateSelector(false)
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md">
-                    <strong>Selected:</strong> {AI_TEMPLATES.find(t => t.id === selectedTemplateId)?.name || 'Traditional'}
-                    <br />
-                    <span className="text-xs text-gray-500">
-                      {AI_TEMPLATES.find(t => t.id === selectedTemplateId)?.description}
-                    </span>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-[#344054] mb-2">
-                    Content
-                  </label>
-                  <RichTextEditor
-                    content={content}
-                    onChange={setContent}
-                    placeholder="Write your release note content here..."
-                    onAIGenerate={handleAIGenerate}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Settings Sidebar */}
-          <div className="space-y-6">
-            <Card className="border-[#e4e7ec] shadow-sm">
-              <CardHeader className="pb-4">
-                <h3 className="text-lg font-semibold text-[#101828]">Publishing Options</h3>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#344054] mb-2">
-                    Status
-                  </label>
-                  <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-[#344054] mb-2">
-                    Schedule Date
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="datetime-local"
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                      className="w-full"
-                    />
-                    <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#667085] pointer-events-none" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-[#e4e7ec] shadow-sm">
-              <CardHeader className="pb-4">
-                <h3 className="text-lg font-semibold text-[#101828]">Categories</h3>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {['Feature', 'Bug Fix', 'Improvement', 'Security', 'Performance', 'Documentation'].map((category) => (
-                    <div key={category} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={category}
-                        checked={selectedCategories.includes(category)}
-                        onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
-                      />
-                      <label 
-                        htmlFor={category}
-                        className="text-sm text-[#344054] cursor-pointer"
-                      >
-                        {category}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-[#e4e7ec] shadow-sm">
-              <CardHeader className="pb-4">
-                <h3 className="text-lg font-semibold text-[#101828]">AI Assistant</h3>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start" onClick={handleAIGenerate} disabled={isLoading}>
-                  <WandIcon className="w-4 h-4 mr-2" />
-                  Generate with Template
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start" 
-                  onClick={() => setShowContentImprover(!showContentImprover)}
-                  disabled={isLoading}
-                >
-                  <WandIcon className="w-4 h-4 mr-2" />
-                  {showContentImprover ? 'Hide' : 'Show'} Content Analysis
-                </Button>
-                <Button variant="outline" className="w-full justify-start" disabled={isLoading}>
-                  <WandIcon className="w-4 h-4 mr-2" />
-                  Generate from Git Commits
-                </Button>
-                <Button variant="outline" className="w-full justify-start" disabled={isLoading}>
-                  <WandIcon className="w-4 h-4 mr-2" />
-                  Suggest Categories
-                </Button>
-              </CardContent>
-            </Card>
+                    <Button variant="outline" className="w-full justify-start" disabled={isLoading}>
+                      <WandIcon className="w-4 h-4 mr-2" />
+                      Generate from Git Commits
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" disabled={isLoading}>
+                      <WandIcon className="w-4 h-4 mr-2" />
+                      Suggest Categories
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+            
+            {/* Content Improvement Panel */}
+            {showContentImprover && content.trim().length > 0 && (
+              <div className="mt-8">
+                <ContentImprover 
+                  content={content}
+                  onContentChange={setContent}
+                />
+              </div>
+            )}
+              </div>
+            </div>
           </div>
         </div>
-        
-        {/* Content Improvement Panel */}
-        {showContentImprover && content.trim().length > 0 && (
-          <div className="mt-8">
-            <ContentImprover 
-              content={content}
-              onContentChange={setContent}
-            />
-          </div>
-        )}
-      </div>
-    </section>
+      )}
+    </DefaultPageLayout>
   )
 }

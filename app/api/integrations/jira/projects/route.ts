@@ -3,6 +3,10 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { jiraAPI } from '@/lib/integrations/jira-client'
 
+// In-memory cache: Map<cacheKey, { data, expiresAt, lastUpdated }>
+const jiraProjectsCache = new Map();
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
@@ -16,6 +20,7 @@ export async function GET(request: NextRequest) {
     const siteId = searchParams.get('siteId')
     const maxResults = parseInt(searchParams.get('maxResults') || '50')
     const startAt = parseInt(searchParams.get('startAt') || '0')
+    const forceRefresh = searchParams.get('refresh') === '1'
 
     // Get Jira integration
     const { data: integration, error: integrationError } = await supabase
@@ -37,6 +42,14 @@ export async function GET(request: NextRequest) {
 
     if (!targetSiteId) {
       return NextResponse.json({ error: 'No Jira site available' }, { status: 400 })
+    }
+
+    // Cache key: orgId:siteId:maxResults:startAt
+    const cacheKey = `${session.user.id}:${targetSiteId}:${maxResults}:${startAt}`
+    const cached = jiraProjectsCache.get(cacheKey)
+    if (cached && cached.expiresAt > Date.now() && !forceRefresh) {
+      console.log('[API] Returning cached Jira projects for', cacheKey)
+      return NextResponse.json({ ...cached.data, lastUpdated: cached.lastUpdated })
     }
 
     try {
@@ -73,7 +86,7 @@ export async function GET(request: NextRequest) {
         })) || []
       })) || []
 
-      return NextResponse.json({
+      const responseData = {
         projects: transformedProjects,
         pagination: {
           startAt: projects.startAt || 0,
@@ -85,7 +98,18 @@ export async function GET(request: NextRequest) {
           id: targetSiteId,
           name: integration.metadata?.resources?.find((r: any) => r.id === targetSiteId)?.name || 'Unknown Site'
         }
+      }
+
+      // Cache the result
+      const lastUpdated = Date.now();
+      jiraProjectsCache.set(cacheKey, {
+        data: responseData,
+        expiresAt: lastUpdated + CACHE_TTL,
+        lastUpdated,
       })
+      console.log('[API] Cached Jira projects for', cacheKey)
+
+      return NextResponse.json({ ...responseData, lastUpdated })
 
     } catch (error) {
       console.error('Error fetching Jira projects:', error)

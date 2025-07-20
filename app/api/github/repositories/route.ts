@@ -2,6 +2,10 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+// In-memory cache: Map<orgId, { data, expiresAt, lastUpdated }>
+const repoCache = new Map();
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export async function GET() {
   console.log('[API] /api/github/repositories - called');
   const supabase = createRouteHandlerClient({ cookies });
@@ -14,12 +18,21 @@ export async function GET() {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
+  const orgId = session.user.id;
+
+  // Check cache
+  const cached = repoCache.get(orgId);
+  if (cached && cached.expiresAt > Date.now()) {
+    console.log('[API] Returning cached repositories for org:', orgId);
+    return NextResponse.json({ repositories: cached.data, lastUpdated: cached.lastUpdated });
+  }
+
   // Get the GitHub integration for this user/org
   const { data: integration, error: integrationError } = await supabase
     .from('integrations')
     .select('encrypted_credentials')
     .eq('type', 'github')
-    .eq('organization_id', session.user.id)
+    .eq('organization_id', orgId)
     .single();
   console.log('[API] Integration:', integration, 'Error:', integrationError);
 
@@ -48,7 +61,17 @@ export async function GET() {
   const repositories = await response.json();
   console.log('[API] Number of repositories fetched:', repositories.length);
 
+  // Cache the result
+  const lastUpdated = Date.now();
+  repoCache.set(orgId, {
+    data: repositories,
+    expiresAt: lastUpdated + CACHE_TTL,
+    lastUpdated,
+  });
+  console.log('[API] Cached repositories for org:', orgId);
+
   return NextResponse.json({
-    repositories // Return the full array as received from GitHub
+    repositories,
+    lastUpdated
   });
 } 
