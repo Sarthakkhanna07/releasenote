@@ -9,7 +9,9 @@ import { Badge } from '@/subframe-ui/components/Badge'
 import { TextField } from '@/subframe-ui/components/TextField'
 import { Button } from '@/subframe-ui/components/Button'
 import { TextArea } from '@/subframe-ui/components/TextArea'
-import { FeatherGithub, FeatherRefreshCw } from '@subframe/core'
+import { FeatherGithub, FeatherRefreshCw, FeatherEdit2 } from '@subframe/core'
+import { Checkbox } from '@/subframe-ui/components/Checkbox'
+import ReleaseNoteEditor from './ReleaseNoteEditor';
 
 // Type definition for a GitHub repository
 interface GitHubRepository {
@@ -31,8 +33,16 @@ export function GitHubReleaseGenerator() {
   const [lastSync, setLastSync] = useState<Date | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
+  // Add state for commits, pull requests, and selection
+  const [commits, setCommits] = useState<any[]>([])
+  const [pullRequests, setPullRequests] = useState<any[]>([])
+  const [selectedChanges, setSelectedChanges] = useState<string[]>([])
+  const [loadingChanges, setLoadingChanges] = useState(false)
+
   // State to manage the multi-step UI flow
   const [step, setStep] = useState(1) // 1: Select, 2: Generate, 3: Preview
+  const [editMode, setEditMode] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
 
   const { createReleaseNote } = useReleaseNotes()
 
@@ -67,25 +77,91 @@ export function GitHubReleaseGenerator() {
     // eslint-disable-next-line
   }, [])
 
+  // Fetch recent commits and pull requests for the selected repo
+  const fetchChanges = async () => {
+    if (!selectedRepo) return
+    setLoadingChanges(true)
+    setError('')
+    try {
+      const [owner, repo] = selectedRepo.split('/')
+      // Fetch commits
+      const commitsRes = await fetch(`/api/github/commits?owner=${owner}&repo=${repo}`)
+      const commitsData = commitsRes.ok ? await commitsRes.json() : { commits: [] }
+      setCommits(commitsData.commits || [])
+      // Fetch pull requests
+      const prsRes = await fetch(`/api/github/pull-requests?owner=${owner}&repo=${repo}`)
+      const prsData = prsRes.ok ? await prsRes.json() : { pullRequests: [] }
+      setPullRequests(prsData.pullRequests || [])
+      // By default, select all
+      const allIds = [
+        ...(commitsData.commits || []).map((c: any) => `commit:${c.sha}`),
+        ...(prsData.pullRequests || []).map((pr: any) => `pr:${pr.number}`),
+      ]
+      setSelectedChanges(allIds)
+    } catch (err) {
+      setError('Failed to fetch changes')
+    } finally {
+      setLoadingChanges(false)
+    }
+  }
+
+  // Fetch changes when moving to step 2
+  useEffect(() => {
+    if (step === 2 && selectedRepo) {
+      fetchChanges()
+    }
+    // eslint-disable-next-line
+  }, [step, selectedRepo])
+
+  // Selection handlers
+  const toggleChangeSelection = (id: string) => {
+    setSelectedChanges((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+  const selectAllChanges = () => {
+    const allIds = [
+      ...commits.map((c: any) => `commit:${c.sha}`),
+      ...pullRequests.map((pr: any) => `pr:${pr.number}`),
+    ]
+    setSelectedChanges(allIds)
+  }
+  const deselectAllChanges = () => setSelectedChanges([])
+
   // Handler for manual refresh
   const handleRefresh = () => {
     setRefreshing(true)
     fetchRepositories(true)
   }
 
-  // 2. Generate release notes from the selected repository
+  // Update handleGenerate to send only selected changes
   const handleGenerate = async () => {
     if (!selectedRepo) {
       setError('Please select a repository')
       return
     }
-
     setLoading(true)
     setError('')
     setGeneratedContent('')
-
     try {
       const [owner, repo] = selectedRepo.split('/')
+      // Prepare selected commits and PRs
+      const selectedCommits = commits.filter((c: any) => selectedChanges.includes(`commit:${c.sha}`))
+      const selectedPRs = pullRequests.filter((pr: any) => selectedChanges.includes(`pr:${pr.number}`))
+      const allChanges = [
+        ...selectedCommits.map((c: any) => ({
+          message: c.message,
+          sha: c.sha,
+          author: c.author?.name,
+          type: 'commit',
+        })),
+        ...selectedPRs.map((pr: any) => ({
+          message: `${pr.title}: ${pr.body?.substring(0, 200) || ''}`,
+          sha: pr.number.toString(),
+          author: pr.user?.login,
+          type: 'pull_request',
+        })),
+      ]
       const response = await fetch('/api/github/generate-release-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,17 +173,16 @@ export function GitHubReleaseGenerator() {
             includeBreakingChanges: true,
             title: `${repo} Release Notes - ${new Date().toLocaleDateString()}`,
           },
+          changes: allChanges, // Pass only selected changes
         }),
       })
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to generate release notes')
       }
-
       const data = await response.json()
       setGeneratedContent(data.content)
-      setStep(3) // Move to the preview step on success
+      setStep(3)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate release notes')
     } finally {
@@ -117,23 +192,27 @@ export function GitHubReleaseGenerator() {
 
   // 3. Save the generated content as a new release note draft
   const handleSaveDraft = async () => {
-    if (!generatedContent) return
-
+    if (!generatedContent && !editedContent) return;
+    setLoading(true);
+    setError('');
     try {
       await createReleaseNote({
         title: `GitHub Release - ${selectedRepo} - ${new Date().toLocaleDateString()}`,
-        content_html: generatedContent,
+        content_markdown: editMode ? editedContent : generatedContent,
         status: 'draft',
-      })
-      alert('Release note saved as draft!')
-      // Reset the entire flow
-      setSelectedRepo('')
-      setGeneratedContent('')
-      setStep(1)
+      });
+      alert('Release note saved as draft!');
+      setSelectedRepo('');
+      setGeneratedContent('');
+      setEditedContent('');
+      setEditMode(false);
+      setStep(1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save release note')
+      setError(err instanceof Error ? err.message : 'Failed to save release note');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
   
   // Placeholder for future publish functionality
   const handlePublish = () => {
@@ -147,6 +226,13 @@ export function GitHubReleaseGenerator() {
     setError('');
     setStep(1);
   }
+
+  // When entering edit mode, always set editedContent to generatedContent if editedContent is empty
+  useEffect(() => {
+    if (!editMode && generatedContent) {
+      setEditedContent(generatedContent);
+    }
+  }, [generatedContent]);
 
   return (
     <div className="flex w-full max-w-[1024px] flex-col items-start gap-8">
@@ -198,7 +284,7 @@ export function GitHubReleaseGenerator() {
               <select
                 className="w-full max-w-[1024px] grow shrink-0 basis-0 rounded-md border border-solid border-neutral-border bg-default-background px-3 py-2 text-body font-body text-default-font shadow-sm outline-none focus:border-brand-500"
                 value={selectedRepo}
-                onChange={(e) => handleReset() || setSelectedRepo(e.target.value) }
+                onChange={(e) => { handleReset(); setSelectedRepo(e.target.value); }}
                 disabled={loadingRepos || repositories.length === 0 || step > 1}
               >
                 <option value="">Choose a repository...</option>
@@ -218,37 +304,66 @@ export function GitHubReleaseGenerator() {
         )}
       </div>
 
-      {/* Step 2: Review Changes (Automatic Analysis) */}
-      {step >= 2 && (
-        <div className={`flex w-full flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-8 py-8 transition-opacity ${step > 2 ? 'opacity-50' : 'opacity-100'}`}>
-            <div className="flex w-full items-center justify-between">
-                <span className="text-heading-2 font-heading-2 text-default-font">
-                2. Review Changes
-                </span>
-                {step > 1 && <Button variant="neutral-secondary" onClick={handleReset}>Change Repository</Button>}
+      {/* Step 2: Review Changes (Selectable List) */}
+      {step === 2 && (
+        <div className="flex w-full flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-8 py-8">
+          <div className="flex w-full items-center justify-between">
+            <span className="text-heading-2 font-heading-2 text-default-font">2. Review Changes</span>
+            <div className="flex items-center gap-2">
+              <Button variant="neutral-secondary" onClick={selectAllChanges}>Select All</Button>
+              <Button variant="neutral-secondary" onClick={deselectAllChanges}>None</Button>
+              <Button variant="neutral-secondary" onClick={handleReset}>Change Repository</Button>
             </div>
-            <div className="flex w-full flex-col items-start gap-2 rounded-md border border-dashed border-neutral-border bg-neutral-50 p-6">
-                <span className="text-heading-3 font-heading-3 text-default-font">Automatic Analysis</span>
-                <p className="text-body font-body text-subtext-color">
-                    Our AI will analyze recent commits and pull requests from the <strong className="text-default-font">{selectedRepo}</strong> repository to draft the release notes. All relevant changes within the default timeframe will be included automatically.
-                </p>
-            </div>
-            {step === 2 && (
-                <Button onClick={handleGenerate} disabled={loading}>
-                  {loading ? 'Generating...' : 'Generate Release Notes'}
-                </Button>
-            )}
+          </div>
+          {loadingChanges ? (
+            <div className="w-full p-3 text-center text-gray-500">Loading recent commits and pull requests...</div>
+          ) : (
+            <>
+              <div className="w-full flex flex-col gap-4">
+                {commits.map((commit: any) => (
+                  <div key={commit.sha} className="flex w-full items-start gap-4 rounded-md border border-solid px-6 py-4 border-neutral-border">
+                    <Checkbox label="" onCheckedChange={() => toggleChangeSelection(`commit:${commit.sha}`)} checked={selectedChanges.includes(`commit:${commit.sha}`)} />
+                    <div className="flex grow shrink-0 basis-0 flex-col items-start gap-1">
+                      <span className="text-body-bold font-body-bold text-default-font">{commit.message.split('\n')[0]}</span>
+                      <p className="text-body font-body text-subtext-color">{commit.message.split('\n').slice(1).join(' ')}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <Badge>{commit.sha.substring(0, 7)}</Badge>
+                        <Badge variant="neutral">Commit</Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {pullRequests.map((pr: any) => (
+                  <div key={pr.number} className="flex w-full items-start gap-4 rounded-md border border-solid px-6 py-4 border-neutral-border">
+                    <Checkbox label="" onCheckedChange={() => toggleChangeSelection(`pr:${pr.number}`)} checked={selectedChanges.includes(`pr:${pr.number}`)} />
+                    <div className="flex grow shrink-0 basis-0 flex-col items-start gap-1">
+                      <span className="text-body-bold font-body-bold text-default-font">{pr.title}</span>
+                      <p className="text-body font-body text-subtext-color">{pr.body?.substring(0, 100)}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <Badge>{pr.number}</Badge>
+                        <Badge variant="success">Pull Request</Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button onClick={handleGenerate} disabled={loading || selectedChanges.length === 0}>
+                {loading ? 'Generating...' : 'Generate Release Notes'}
+              </Button>
+            </>
+          )}
         </div>
       )}
 
       {/* Step 3: Preview & Customize */}
-      {step === 3 && generatedContent && (
+      {step === 3 && generatedContent && !editMode && (
         <div className="flex w-full flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-8 py-8">
           <div className="flex w-full items-center justify-between">
             <span className="text-heading-2 font-heading-2 text-default-font">
               3. Preview &amp; Customize
             </span>
-             <Button
+            <div className="flex gap-2">
+              <Button
                 variant="neutral-secondary"
                 icon={<FeatherRefreshCw />}
                 onClick={handleGenerate}
@@ -256,13 +371,24 @@ export function GitHubReleaseGenerator() {
               >
                 {loading ? 'Regenerating...' : 'Regenerate'}
               </Button>
+              <Button
+                variant="neutral-secondary"
+                icon={<FeatherEdit2 />}
+                onClick={() => {
+                  setEditedContent(generatedContent || '');
+                  setEditMode(true);
+                }}
+              >
+                Edit
+              </Button>
+            </div>
           </div>
           <div className="flex w-full flex-col items-start gap-4">
             <div className="w-full">
                 <label className="text-body-bold font-body-bold text-default-font">Release Notes Preview</label>
                 <p className="text-body font-body text-subtext-color">AI-generated release notes based on your repository's recent activity.</p>
                 <div
-                    className="mt-2 h-auto min-h-[240px] w-full flex-none rounded-md border border-solid border-neutral-border bg-neutral-50 p-4 font-monospace-body prose prose-sm max-w-none"
+                    className="mt-2 h-auto min-h-[240px] w-full flex-none rounded-md border border-solid border-neutral-border bg-neutral-50 p-4 font-monospace-body prose prose-sm max-w-none text-black"
                     dangerouslySetInnerHTML={{ __html: generatedContent }}
                 />
             </div>
@@ -286,6 +412,36 @@ export function GitHubReleaseGenerator() {
                 <Button onClick={handlePublish}>Publish Release Notes</Button>
             </div>
             <Button variant="neutral-secondary" onClick={handleReset}>Start Over</Button>
+          </div>
+        </div>
+      )}
+      {/* Edit Mode */}
+      {step === 3 && editMode && (
+        <div className="flex w-full flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-8 py-8">
+          <div className="flex w-full items-center justify-between">
+            <span className="text-heading-2 font-heading-2 text-default-font">
+              Edit Release Notes
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="neutral-secondary"
+                onClick={() => setEditMode(false)}
+              >
+                Back to Preview
+              </Button>
+            </div>
+          </div>
+          <div className="w-full">
+            <ReleaseNoteEditor
+              value={editedContent}
+              onChange={setEditedContent}
+              placeholder="Edit your release notes here..."
+            />
+          </div>
+          <div className="flex w-full items-center justify-between mt-4">
+            <Button onClick={handleSaveDraft} disabled={loading}>
+              {loading ? 'Saving...' : 'Save Draft'}
+            </Button>
           </div>
         </div>
       )}

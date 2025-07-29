@@ -50,7 +50,7 @@ export default function ReleaseJourneyStart() {
               variant="brand"
               icon={<FeatherZap />}
               title={<span className="text-lg font-semibold">Start Your Release Notes Journey</span>}
-              description={<span className="text-base text-neutral-600">Whether you prefer AI assistance, proven templates, or starting from scratch, we've got you covered. Select the path that best matches your style.</span>}
+              description={<span className="text-base text-neutral-600">Choose between AI-powered generation or manual creation. Both options give you access to templates and full customization.</span>}
               actions={
                 <IconButton
                   size="medium"
@@ -62,7 +62,7 @@ export default function ReleaseJourneyStart() {
             <div className="flex w-full flex-col items-start gap-8">
               <div className="flex w-full items-start gap-6">
                 {/* AI Option */}
-                <div className="flex grow shrink-0 basis-0 flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6">
+                <div className="flex grow shrink-0 basis-0 flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6 hover:shadow-lg transition-shadow">
                   <div className="flex w-full flex-col items-start gap-4">
                     <div className="flex w-full items-start justify-between">
                       <IconWithBackground
@@ -77,7 +77,7 @@ export default function ReleaseJourneyStart() {
                         Create with AI
                       </span>
                       <span className="text-base text-neutral-500">
-                        Let our AI assistant transform your changes into polished release notes automatically
+                        Analyze your repository data and generate professional release notes automatically with AI
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -88,49 +88,30 @@ export default function ReleaseJourneyStart() {
                         AI-Powered
                       </Badge>
                       <Badge variant="neutral" icon={<FeatherGitPullRequest />}>
-                        Integration
+                        Smart Analysis
                       </Badge>
                     </div>
-      </div>
-                  <Link href="/dashboard/releases/new/ai" passHref legacyBehavior>
-                    <Button icon={<FeatherArrowRight />}>Start with AI</Button>
-                  </Link>
-                </div>
-                {/* Template Option */}
-                <div className="flex grow shrink-0 basis-0 flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6">
-                  <div className="flex w-full flex-col items-start gap-4">
-                    <IconWithBackground
-                      variant="neutral"
-                      size="large"
-                      icon={<FeatherFileText />}
-                      square={true}
-                    />
-                    <div className="flex w-full flex-col items-start gap-2">
-                      <span className="text-xl font-bold text-default-font">
-                        Use Template
-                      </span>
-                      <span className="text-base text-neutral-500">
-                        Start with a proven structure and customize it to your needs
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="neutral" icon={<FeatherLayout />}>
-                        Structured
-                      </Badge>
-                      <Badge variant="neutral" icon={<FeatherCopy />}>
-                        Consistent
-                      </Badge>
-                      <Badge variant="neutral" icon={<FeatherCheck />}>
-                        Best Practice
-                      </Badge>
+                    <div className="text-sm text-neutral-600 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-brand-600"></div>
+                        <span>Analyze commits & issues</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-brand-600"></div>
+                        <span>Smart template selection</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-brand-600"></div>
+                        <span>Organization context</span>
+                      </div>
                     </div>
                   </div>
-                  <Link href="/dashboard/releases/new/template" passHref legacyBehavior>
-                    <Button variant="neutral-primary" icon={<FeatherArrowRight />}>Choose template</Button>
+                  <Link href="/dashboard/releases/new/ai" passHref legacyBehavior>
+                    <Button icon={<FeatherArrowRight />} className="w-full">Start with AI</Button>
                   </Link>
                 </div>
-                {/* Scratch Option */}
-                <div className="flex grow shrink-0 basis-0 flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6">
+                {/* Manual Option */}
+                <div className="flex grow shrink-0 basis-0 flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6 hover:shadow-lg transition-shadow">
                   <div className="flex w-full flex-col items-start gap-4">
                     <IconWithBackground
                       variant="neutral"
@@ -140,10 +121,10 @@ export default function ReleaseJourneyStart() {
                     />
                     <div className="flex w-full flex-col items-start gap-2">
                       <span className="text-xl font-bold text-default-font">
-                        Start Fresh
+                        Start from Scratch
                       </span>
                       <span className="text-base text-neutral-500">
-                        Begin with a blank canvas and craft your perfect release notes
+                        Create release notes manually with our premium editor and templates
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -154,13 +135,27 @@ export default function ReleaseJourneyStart() {
                         Flexible
                       </Badge>
                       <Badge variant="neutral" icon={<FeatherPenTool />}>
-                        Custom
+                        Full Control
                       </Badge>
+                    </div>
+                    <div className="text-sm text-neutral-600 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-neutral-500"></div>
+                        <span>Rich text editor</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-neutral-500"></div>
+                        <span>Template library</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-neutral-500"></div>
+                        <span>Full customization</span>
+                      </div>
                     </div>
                   </div>
                   <Link href="/dashboard/releases/new/scratch" passHref legacyBehavior>
-                    <Button variant="neutral-primary" icon={<FeatherArrowRight />}>Start from scratch</Button>
-              </Link>
+                    <Button variant="neutral-primary" icon={<FeatherArrowRight />} className="w-full">Start from Scratch</Button>
+                  </Link>
                 </div>
               </div>
             </div>

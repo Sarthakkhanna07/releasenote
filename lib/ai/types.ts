@@ -55,4 +55,15 @@ export interface AiProvider {
       temperature?: number
     }
   ): Promise<string>
+  
+  generateWithContext?(
+    userPrompt: string,
+    organizationData: any,
+    aiContextData: any,
+    options?: {
+      contentType?: 'release_notes' | 'feature_announcement' | 'bug_fix' | 'security_update'
+      maxTokens?: number
+      temperature?: number
+    }
+  ): Promise<string>
 } 

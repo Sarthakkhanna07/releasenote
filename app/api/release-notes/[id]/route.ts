@@ -35,10 +35,7 @@ export async function GET(
 
     const { data: releaseNote, error: noteError } = await supabase
       .from('release_notes')
-      .select(`
-        *,
-        author:users!author_id(name, email)
-      `)
+      .select('*')
       .eq('id', releaseNoteId)
       .eq('organization_id', orgMember.organization_id)
       .single()

@@ -1,70 +1,84 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
-import { Database } from "@/types/supabase"
+import { AIContextService } from "@/lib/services/ai-context.service"
+import { createSuccessResponse, ApiErrors, withPerformanceTracking } from "@/lib/api-response"
 
 // GET: Fetch AI context for user's organization
 export async function GET(request: NextRequest) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies })
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError || !session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  return withPerformanceTracking(async () => {
+    try {
+      const supabase = createRouteHandlerClient({ cookies })
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !session?.user) {
+        return ApiErrors.unauthorized('Authentication required')
+      }
+
+      // Use the new service to get complete context
+      const { organization, aiContext } = await AIContextService.getCompleteContext(session.user.id)
+      
+      if (!organization) {
+        return ApiErrors.badRequest('Organization not found. Please ensure you are a member of an organization.')
+      }
+
+      return createSuccessResponse({
+        aiContext,
+        organization: {
+          name: organization.name,
+          id: organization.id
+        }
+      })
+    } catch (error) {
+      console.error("AI context fetch error:", error)
+      return ApiErrors.internalServer('Failed to fetch AI context')
     }
-    // Get user's organization
-    const { data: memberData, error: memberError } = await supabase
-      .from("organization_members")
-      .select("organization_id")
-      .eq("user_id", session.user.id)
-      .single()
-    if (memberError || !memberData) {
-      return NextResponse.json({ error: "Organization not found" }, { status: 404 })
-    }
-    const { data: aiContext, error: contextError } = await supabase
-      .from("ai_context")
-      .select("*")
-      .eq("organization_id", memberData.organization_id)
-      .single()
-    if (contextError && contextError.code !== 'PGRST116') throw contextError // PGRST116: No rows found
-    return NextResponse.json({ aiContext: aiContext || null })
-  } catch (error) {
-    console.error("AI context fetch error:", error)
-    return NextResponse.json({ error: "Failed to fetch AI context" }, { status: 500 })
-  }
+  })
 }
 
 // POST: Create or update AI context for organization
 export async function POST(request: NextRequest) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies })
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError || !session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  return withPerformanceTracking(async () => {
+    try {
+      const supabase = createRouteHandlerClient({ cookies })
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !session?.user) {
+        return ApiErrors.unauthorized('Authentication required')
+      }
+
+      const body = await request.json()
+
+      // Validate the AI context data
+      const validation = AIContextService.validateAIContext(body)
+      if (!validation.isValid) {
+        return ApiErrors.badRequest(`Validation failed: ${validation.errors.join(', ')}`)
+      }
+
+      // Get organization data
+      const organization = await AIContextService.getOrganizationData(session.user.id)
+      if (!organization) {
+        return ApiErrors.badRequest('Organization not found. Please ensure you are a member of an organization.')
+      }
+
+      // Upsert AI context using the service
+      const updatedContext = await AIContextService.upsertAIContext(organization.id, body)
+      
+      if (!updatedContext) {
+        return ApiErrors.internalServer('Failed to save AI context')
+      }
+
+      return createSuccessResponse({
+        aiContext: updatedContext,
+        organization: {
+          name: organization.name,
+          id: organization.id
+        },
+        message: 'AI context saved successfully'
+      })
+    } catch (error) {
+      console.error("AI context upsert error:", error)
+      return ApiErrors.internalServer('Failed to save AI context')
     }
-    const body = await request.json()
-    // Get user's organization
-    const { data: memberData, error: memberError } = await supabase
-      .from("organization_members")
-      .select("organization_id")
-      .eq("user_id", session.user.id)
-      .single()
-    if (memberError || !memberData) {
-      return NextResponse.json({ error: "Organization not found" }, { status: 404 })
-    }
-    // Upsert (insert or update) AI context for this organization
-    const upsertPayload = {
-      ...body,
-      organization_id: memberData.organization_id,
-    }
-    const { data, error } = await supabase
-      .from("ai_context")
-      .upsert([upsertPayload], { onConflict: "organization_id" })
-      .select()
-      .single()
-    if (error) throw error
-    return NextResponse.json({ aiContext: data }, { status: 201 })
-  } catch (error) {
-    console.error("AI context upsert error:", error)
-    return NextResponse.json({ error: "Failed to save AI context" }, { status: 500 })
-  }
+  })
 }

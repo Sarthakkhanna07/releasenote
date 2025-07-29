@@ -147,26 +147,26 @@ export default function DashboardHomePage() {
           <div className="flex items-center gap-4">
             <span className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-lg">{initials}</span>
             <div className="flex flex-col">
-              <span className="text-2xl font-bold text-default-font">Welcome back, {displayName}!</span>
+              <span className="text-xl font-semibold text-default-font">Welcome back, {displayName}!</span>
               {orgName && <span className="text-sm text-neutral-500">{orgName}</span>}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/dashboard/notifications" title="Notifications">
               <IconButton icon={<FeatherBell />} aria-label="Notifications" />
-            </Link>
+        </Link>
             <Link href="/dashboard/settings" title="Settings">
               <IconButton icon={<FeatherSettings />} aria-label="Settings" />
-            </Link>
-          </div>
+        </Link>
+      </div>
         </div>
-        <span className="text-base text-subtext-color">Let’s get your release notes workflow humming.</span>
+        <span className="text-base text-neutral-500">Let's get your release notes workflow humming.</span>
         <div className="flex items-center gap-3 mt-2">
           <div className="w-48 h-2 bg-neutral-200 rounded-full overflow-hidden">
             <div className="h-2 bg-brand-600 rounded-full transition-all" style={{ width: `${(completedSteps / totalSteps) * 100}%` }} />
           </div>
           <span className="text-xs text-neutral-500">{completedSteps}/{totalSteps} steps complete</span>
-        </div>
+      </div>
         {/* Quick Actions Row */}
         <div className="flex gap-4 mt-4">
           <Link href="/dashboard/releases/start" title="Create Release Note">
@@ -190,12 +190,12 @@ export default function DashboardHomePage() {
         ) : completedSteps === totalSteps ? (
           <div className="flex flex-col items-center gap-3 py-6">
             <span className="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-700 text-3xl">✓</span>
-            <span className="text-xl font-semibold text-green-700">You’re all set!</span>
-            <span className="text-base text-neutral-500 text-center">You’ve completed all onboarding steps. Start publishing your release notes and keep your users in the loop.</span>
+            <span className="text-xl font-semibold text-green-700">You're all set!</span>
+            <span className="text-base text-neutral-500 text-center">You've completed all onboarding steps. Start publishing your release notes and keep your users in the loop.</span>
             <Link href="/dashboard/releases/start">
               <Button variant="brand-primary" size="large" className="mt-2">Create a Release Note</Button>
-            </Link>
-          </div>
+          </Link>
+        </div>
         ) : (
           <ol className="flex flex-col gap-3">
             {checklist.map((item, i) => (
@@ -211,7 +211,7 @@ export default function DashboardHomePage() {
                 {!item.done && item.label === 'Create your first release note' && (
                   <Link href="/dashboard/releases/start">
                     <Button size="small" variant="neutral-secondary" className="ml-2">Create</Button>
-                  </Link>
+        </Link>
                 )}
               </li>
             ))}
@@ -225,7 +225,7 @@ export default function DashboardHomePage() {
         </span>
         <div className="flex w-full flex-col gap-4 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-8">
           {loadingIntegrations ? (
-            <span className="text-base text-subtext-color">Loading integrations...</span>
+            <span className="text-base text-neutral-500">Loading integrations...</span>
           ) : (
             <>
               {INTEGRATION_TYPES.map((meta) => {
@@ -236,14 +236,14 @@ export default function DashboardHomePage() {
                     <div className="flex items-center gap-3">
                       <span className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-100">{meta.icon}</span>
                       <div>
-                        <span className="font-medium text-default-font">{meta.name}</span>
-                        <span className="block text-xs text-subtext-color">{meta.description}</span>
+                        <span className="text-base font-medium text-default-font">{meta.name}</span>
+                        <span className="block text-xs text-neutral-500">{meta.description}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 mt-2 md:mt-0">
                       <span className={`text-xs px-2 py-1 rounded-full ${isConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{isConnected ? 'Connected' : 'Not Connected'}</span>
                       {isConnected && integration.created_at && (
-                        <span className="text-xs text-neutral-400">Last sync: {new Date(integration.created_at).toLocaleDateString()}</span>
+                        <span className="text-xs text-neutral-500">Last sync: {new Date(integration.created_at).toLocaleDateString()}</span>
                       )}
                       <Link href="/dashboard/integrations">
                         <Button size="small" variant="neutral-tertiary" className="ml-2">Manage</Button>
@@ -254,11 +254,11 @@ export default function DashboardHomePage() {
               })}
               {INTEGRATION_TYPES.every(meta => !integrationsByType[meta.type]) && (
                 <div className="flex flex-col items-center gap-2 py-8">
-                  <IconWithBackground size="large" icon={<FeatherLink />} />
-                  <span className="text-base text-subtext-color">No integrations connected yet.</span>
+          <IconWithBackground size="large" icon={<FeatherLink />} />
+                  <span className="text-base text-neutral-500">No integrations connected yet.</span>
                   <Link href="/dashboard/integrations">
                     <Button className="text-sm px-4 py-2">Connect Integration</Button>
-                  </Link>
+          </Link>
                 </div>
               )}
             </>
@@ -272,23 +272,23 @@ export default function DashboardHomePage() {
           <div className="flex flex-col gap-1">
             <span className="text-base font-medium text-default-font">{recentNote.title}</span>
             <span className="text-xs text-neutral-500">{new Date(recentNote.created_at).toLocaleDateString()} &middot; {recentNote.status.charAt(0).toUpperCase() + recentNote.status.slice(1)}</span>
-            <Link href={`/dashboard/releases/edit/${recentNote.id}`} className="mt-1">
+            <Link href={`/dashboard/releases/editor/${recentNote.id}`} className="mt-1">
               <Button size="small" variant="neutral-secondary">View/Edit</Button>
             </Link>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <span className="text-base text-neutral-400">No recent activity yet. Once you publish release notes, you’ll see them here!</span>
+            <span className="text-base text-neutral-500">No recent activity yet. Once you publish release notes, you'll see them here!</span>
             <Link href="/dashboard/releases/start">
               <Button size="small" variant="brand-primary">Create a Release Note</Button>
             </Link>
           </div>
         )}
-      </div>
+          </div>
       {/* Tips Section */}
       <div className="w-full rounded-xl border border-neutral-200 bg-white px-8 py-6 flex flex-col gap-2">
         <span className="text-lg font-semibold text-default-font mb-1">Did you know?</span>
-        <span className="text-base text-neutral-400">{tip}</span>
+        <span className="text-base text-neutral-500">{tip}</span>
       </div>
     </div>
   );

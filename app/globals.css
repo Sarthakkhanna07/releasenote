@@ -26,6 +26,10 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+html, body {
+  background: #fff !important;
+}
+
 /* TipTap Editor Callout Styles */
 .callout {
   border-left-width: 4px;

@@ -62,7 +62,8 @@ export default function ReleaseNotesPage() {
   const handleAction = (action: string, releaseNote: any, data?: any) => {
     switch (action) {
       case "edit":
-        router.push(`/dashboard/releases/edit/${releaseNote.id}`);
+        // Go to editor page for all release notes
+        router.push(`/dashboard/releases/editor/${releaseNote.id}`);
         break;
       case "view":
         window.open(`/notes/${user?.id}/${releaseNote.slug}`, "_blank");

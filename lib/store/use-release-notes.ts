@@ -104,6 +104,16 @@ const initialState = {
   }
 }
 
+// Utility to generate a slug from a string
+function slugify(text: string) {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 64);
+}
+
 export const useReleaseNotesStore = create<ReleaseNotesState>()(
   devtools(
     persist(
@@ -197,19 +207,34 @@ export const useReleaseNotesStore = create<ReleaseNotesState>()(
           try {
             set({ isCreating: true, error: null }, false, 'createReleaseNoteStart')
             const supabase = createClientComponentClient()
-            
+
+            const baseTitle = data.title || 'Untitled Release Note';
+            const baseSlug = slugify(baseTitle) + '-' + Date.now().toString(36);
+
+            // Ensure required fields for insert
+            const required: Partial<ReleaseNote> = {
+              organization_id: data.organization_id!,
+              title: baseTitle,
+              slug: data.slug || baseSlug,
+              content_markdown: data.content_markdown ?? '',
+              status: data.status || 'draft',
+              views: typeof data.views === 'number' ? data.views : 0,
+            };
+            const insertData = { ...required, ...data };
+
             const { data: newNote, error } = await supabase
               .from('release_notes')
-              .insert([data])
+              .insert([insertData])
               .select()
               .single()
-            
+
             if (error) throw error
-            
+
             get().addReleaseNote(newNote)
             set({ isCreating: false }, false, 'createReleaseNoteSuccess')
             return newNote
           } catch (error) {
+            console.error("Supabase createReleaseNote error:", error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to create release note'
             set({ error: errorMessage, isCreating: false }, false, 'createReleaseNoteError')
             return null

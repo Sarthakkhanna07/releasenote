@@ -7,13 +7,14 @@ let aiProvider: AiProvider | null = null
 
 function initializeProvider(): AiProvider {
   if (!aiProvider) {
-    switch (configuredProvider) {
-      case 'azure-openai':
-      default:
-        // Lazy import to prevent build-time initialization
-        const { azureOpenAIProvider } = require('./azure-openai')
-        aiProvider = azureOpenAIProvider
-        break;
+    // Prefer Gemini if GEMINI_API_KEY is set
+    if (process.env.GEMINI_API_KEY) {
+      const { geminiProvider } = require('./gemini')
+      aiProvider = geminiProvider
+    } else {
+      // Default to Azure OpenAI
+      const { azureOpenAIProvider } = require('./azure-openai')
+      aiProvider = azureOpenAIProvider
     }
   }
   return aiProvider!

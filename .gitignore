@@ -34,3 +34,5 @@ next-env.d.ts
 
 # vercel environment variables
 .env.vercel
+
+/thinking process notes

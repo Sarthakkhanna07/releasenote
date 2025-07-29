@@ -3,6 +3,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { GitHubService } from '@/lib/integrations/github'
 import { getAiProvider } from '@/lib/ai'
+import { AIContextService } from '@/lib/services/ai-context.service'
+import type { GitHubPullRequest } from '@/lib/integrations/github'
 
 /**
  * Generate release notes from GitHub repository data
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get recent merged pull requests for additional context
-    let pullRequests = [];
+    let pullRequests: GitHubPullRequest[] = [];
     try {
       pullRequests = await github.getPullRequests(repository.owner, repository.repo, {
         state: 'closed',
@@ -122,15 +124,38 @@ export async function POST(request: NextRequest) {
     const allChanges = [...commitsForAI, ...prsForAI];
     console.log('[API] All changes for AI:', allChanges.length);
 
-    // Generate release notes using AI
+    // Get organization and AI context for professional generation
+    const { organization, aiContext } = await AIContextService.getCompleteContext(session.user.id);
+    console.log('[API] Organization:', organization?.name, 'AI Context:', aiContext ? 'Present' : 'Missing');
+
+    // Generate release notes using professional AI system
     let generatedContent = '';
     try {
       const aiProvider = getAiProvider();
-      generatedContent = await aiProvider.generateReleaseNotes(allChanges, {
-        template: options?.template || 'traditional',
-        tone: options?.tone || 'professional',
-        includeBreakingChanges: options?.includeBreakingChanges || true
-      });
+      
+      // Check if provider supports context-aware generation
+      if (typeof aiProvider.generateReleaseNotesWithContext === 'function' && organization && aiContext) {
+        console.log('[API] Using professional context-aware generation');
+        generatedContent = await aiProvider.generateReleaseNotesWithContext(
+          allChanges,
+          organization,
+          aiContext,
+          {
+            includeBreakingChanges: options?.includeBreakingChanges || true,
+            additionalContext: options?.additionalContext,
+            maxTokens: 3000,
+            temperature: 0.3
+          }
+        );
+      } else {
+        console.log('[API] Falling back to basic generation');
+        // Fallback to original method if context-aware generation not available
+        generatedContent = await aiProvider.generateReleaseNotes(allChanges, {
+          template: options?.template || 'traditional',
+          tone: aiContext?.tone || options?.tone || 'professional',
+          includeBreakingChanges: options?.includeBreakingChanges || true
+        });
+      }
       console.log('[API] AI generated content length:', generatedContent.length);
     } catch (err) {
       console.error('[API] Error generating release notes with AI:', err);
@@ -140,18 +165,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save as draft release note
+    // Save as draft release note with professional generation metadata
     let draftNote = null;
     try {
+      // Get GitHub integration ID for tracking
+      const { data: integrationData } = await supabase
+        .from('integrations')
+        .select('id')
+        .eq('type', 'github')
+        .eq('organization_id', session.user.id)
+        .single();
+
       const { data, error: saveError } = await supabase
         .from('release_notes')
         .insert([{
           title: options?.title || `Release Notes - ${new Date().toLocaleDateString()}`,
           content_html: generatedContent,
+          content_markdown: generatedContent, // Store as markdown too
           status: 'draft',
           organization_id: session.user.id,
           author_id: session.user.id,
           source_ticket_ids: commits.slice(0, 10).map(c => c.sha),
+          integration_id: integrationData?.id || null,
+          ai_model: 'gemini-2.0-flash',
+          system_prompt: organization && aiContext ? 'Professional context-aware prompt' : 'Basic generation',
+          user_prompt: `GitHub repository: ${repository.owner}/${repository.repo}, ${allChanges.length} changes`,
           views: 0
         }])
         .select()
@@ -184,7 +222,11 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[API] Unhandled error in release notes generation:', error, error?.stack);
+    if (error instanceof Error) {
+      console.error('[API] Unhandled error in release notes generation:', error, error.stack);
+    } else {
+      console.error('[API] Unhandled error in release notes generation:', error);
+    }
     if (error instanceof Error && error.message.includes('GitHub API error')) {
       return NextResponse.json(
         { error: 'Failed to fetch data from GitHub', details: error.message },
