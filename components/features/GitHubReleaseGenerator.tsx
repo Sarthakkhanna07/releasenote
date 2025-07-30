@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useReleaseNotes } from '@/lib/store'
+import { useReleaseNotes, useReleaseNotesActions } from '@/lib/store'
 import Link from 'next/link'
 
 // Subframe UI Components
@@ -25,11 +25,11 @@ interface GitHubRepository {
 export function GitHubReleaseGenerator() {
   // State for data and API status
   const [repositories, setRepositories] = useState<GitHubRepository[]>([])
-  const [selectedRepo, setSelectedRepo] = useState('')
-  const [generatedContent, setGeneratedContent] = useState('')
+  const [selectedRepo, setSelectedRepo] = useState<string>('')
+  const [generatedContent, setGeneratedContent] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [loadingRepos, setLoadingRepos] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string>('')
   const [lastSync, setLastSync] = useState<Date | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -38,11 +38,12 @@ export function GitHubReleaseGenerator() {
   const [pullRequests, setPullRequests] = useState<any[]>([])
   const [selectedChanges, setSelectedChanges] = useState<string[]>([])
   const [loadingChanges, setLoadingChanges] = useState(false)
+  const [draftId, setDraftId] = useState<string | null>(null) // Add state for draft ID
 
   // State to manage the multi-step UI flow
   const [step, setStep] = useState(1) // 1: Select, 2: Generate, 3: Preview
   const [editMode, setEditMode] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
+  const [editedContent, setEditedContent] = useState<string>('');
 
   const { createReleaseNote } = useReleaseNotes()
 
@@ -143,6 +144,7 @@ export function GitHubReleaseGenerator() {
     setLoading(true)
     setError('')
     setGeneratedContent('')
+    setDraftId(null) // Reset draft ID
     try {
       const [owner, repo] = selectedRepo.split('/')
       // Prepare selected commits and PRs
@@ -182,6 +184,7 @@ export function GitHubReleaseGenerator() {
       }
       const data = await response.json()
       setGeneratedContent(data.content)
+      setDraftId(data.draftId) // Capture the draft ID from the response
       setStep(3)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate release notes')
@@ -190,22 +193,35 @@ export function GitHubReleaseGenerator() {
     }
   }
 
-  // 3. Save the generated content as a new release note draft
+  // Update handleSaveDraft to use existing draft if available
   const handleSaveDraft = async () => {
     if (!generatedContent && !editedContent) return;
     setLoading(true);
     setError('');
     try {
-      await createReleaseNote({
-        title: `GitHub Release - ${selectedRepo} - ${new Date().toLocaleDateString()}`,
-        content_markdown: editMode ? editedContent : generatedContent,
-        status: 'draft',
-      });
-      alert('Release note saved as draft!');
+      if (draftId) {
+        // If we have a draft ID, update the existing draft
+        const { updateReleaseNote } = useReleaseNotesActions();
+        await updateReleaseNote(draftId, {
+          title: `GitHub Release - ${selectedRepo} - ${new Date().toLocaleDateString()}`,
+          content_markdown: editMode ? editedContent : generatedContent,
+          status: 'draft',
+        });
+        alert('Release note draft updated successfully!');
+      } else {
+        // Fallback to creating a new draft if no draft ID exists
+        await createReleaseNote({
+          title: `GitHub Release - ${selectedRepo} - ${new Date().toLocaleDateString()}`,
+          content_markdown: editMode ? editedContent : generatedContent,
+          status: 'draft',
+        });
+        alert('Release note saved as draft!');
+      }
       setSelectedRepo('');
       setGeneratedContent('');
       setEditedContent('');
       setEditMode(false);
+      setDraftId(null);
       setStep(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save release note');
@@ -409,6 +425,14 @@ export function GitHubReleaseGenerator() {
                 <Button variant="neutral-secondary" onClick={handleSaveDraft}>
                 Save Draft
                 </Button>
+                {draftId && (
+                  <Button 
+                    variant="neutral-secondary" 
+                    onClick={() => window.location.href = `/dashboard/releases/editor/${draftId}`}
+                  >
+                    Open in Editor
+                  </Button>
+                )}
                 <Button onClick={handlePublish}>Publish Release Notes</Button>
             </div>
             <Button variant="neutral-secondary" onClick={handleReset}>Start Over</Button>
@@ -439,9 +463,19 @@ export function GitHubReleaseGenerator() {
             />
           </div>
           <div className="flex w-full items-center justify-between mt-4">
-            <Button onClick={handleSaveDraft} disabled={loading}>
-              {loading ? 'Saving...' : 'Save Draft'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSaveDraft} disabled={loading}>
+                {loading ? 'Saving...' : 'Save Draft'}
+              </Button>
+              {draftId && (
+                <Button 
+                  variant="neutral-secondary" 
+                  onClick={() => window.location.href = `/dashboard/releases/editor/${draftId}`}
+                >
+                  Open in Editor
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

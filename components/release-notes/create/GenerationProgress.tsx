@@ -93,6 +93,7 @@ export default function GenerationProgress({ wizardData }: GenerationProgressPro
             })
 
             // Step 4: Generate release notes
+            let generationResult = null
             await processStep(3, async () => {
                 const response = await fetch('/api/release-notes/generate', {
                     method: 'POST',
@@ -109,6 +110,7 @@ export default function GenerationProgress({ wizardData }: GenerationProgressPro
                 
                 if (!response.ok) throw new Error('Failed to generate release notes')
                 const result = await response.json()
+                generationResult = result
                 setGeneratedContent(result)
                 return result
             })
@@ -121,8 +123,8 @@ export default function GenerationProgress({ wizardData }: GenerationProgressPro
 
             // Redirect to editor with the draft ID after a brief delay
             setTimeout(() => {
-                if (generatedContent?.draftId) {
-                    router.push(`/dashboard/releases/editor?draftId=${generatedContent.draftId}&generated=true`)
+                if (generationResult?.draftId) {
+                    router.push(`/dashboard/releases/editor/${generationResult.draftId}`)
                 } else {
                     router.push(`/dashboard/releases/editor?generated=true`)
                 }
@@ -285,7 +287,7 @@ export default function GenerationProgress({ wizardData }: GenerationProgressPro
                                 <Button
                                     onClick={() => {
                                         if (generatedContent?.draftId) {
-                                            router.push(`/dashboard/releases/editor?draftId=${generatedContent.draftId}&generated=true`)
+                                            router.push(`/dashboard/releases/editor/${generatedContent.draftId}`)
                                         } else {
                                             router.push('/dashboard/releases/editor?generated=true')
                                         }
