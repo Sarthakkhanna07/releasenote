@@ -35,12 +35,13 @@ async function getOrganizationReleaseNotes(orgSlug: string) {
     return null
   }
 
-  // Fetch published release notes with enhanced fields
+  // Fetch published and public release notes with enhanced fields
   const { data: notesData, error: notesError } = await supabase
     .from('release_notes')
     .select('id, title, slug, published_at, content_html, category, tags, featured_image_url, excerpt, views')
     .eq('organization_id', orgData.id)
     .eq('status', 'published')
+    .eq('is_public', true)
     .order('published_at', { ascending: false })
     .limit(50)
 

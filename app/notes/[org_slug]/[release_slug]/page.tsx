@@ -28,20 +28,21 @@ async function getReleaseNote(orgSlug: string, releaseSlug: string) {
   // Create a Supabase client configured for server components
   const supabase = createServerComponentClient<Database>({ cookies })
 
-  // Optimized: Single query with JOIN to fetch both organization and release note data
-  const { data, error } = await supabase
-    .from('release_notes')
-    .select(`
-      ${DB_CONSTANTS.RELEASE_NOTE_SELECT},
-      organizations!inner(
-        name,
-        logo_url
-      )
-    `)
-    .eq('organizations.slug', orgSlug)
-    .eq('slug', releaseSlug)
-    .eq('status', DB_CONSTANTS.PUBLISHED_STATUS)
-    .single()
+     // Optimized: Single query with JOIN to fetch both organization and release note data
+   const { data, error } = await supabase
+     .from('release_notes')
+     .select(`
+       ${DB_CONSTANTS.RELEASE_NOTE_SELECT},
+       organizations!inner(
+         name,
+         logo_url
+       )
+     `)
+     .eq('organizations.slug', orgSlug)
+     .eq('slug', releaseSlug)
+     .eq('status', DB_CONSTANTS.PUBLISHED_STATUS)
+     .eq('is_public', true)
+     .single()
 
   if (error || !data) {
     logger.dbError('fetch release note', error, { orgSlug, releaseSlug })
@@ -56,7 +57,7 @@ async function getReleaseNote(orgSlug: string, releaseSlug: string) {
       title: releaseNoteData.title,
       content_html: releaseNoteData.content_html,
       published_at: releaseNoteData.published_at,
-      cover_image_url: releaseNoteData.cover_image_url
+      featured_image_url: releaseNoteData.featured_image_url
     },
     organization: {
       name: releaseNoteData.organizations.name,
@@ -106,14 +107,14 @@ export async function generateMetadata({ params }: Props) {
     openGraph: {
       title: pageTitle,
       description: description,
-      images: note.cover_image_url ? [note.cover_image_url] : [], // Use cover image if available
-    },
-    twitter: {
-        card: 'summary_large_image',
-        title: pageTitle,
-        description: description,
-        images: note.cover_image_url ? [note.cover_image_url] : [],
-    },
+             images: note.featured_image_url ? [note.featured_image_url] : [], // Use featured image if available
+     },
+     twitter: {
+         card: 'summary_large_image',
+         title: pageTitle,
+         description: description,
+         images: note.featured_image_url ? [note.featured_image_url] : [],
+     },
   }
 }
 // --- End generateMetadata --- 
@@ -134,19 +135,19 @@ export default async function PublicReleaseNotePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <article className="max-w-3xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-        {/* Optional Cover Image */}
-        {note.cover_image_url && (
-           <div className="w-full h-64 relative">
-            <Image 
-              src={note.cover_image_url} 
-              alt={`${note.title} cover image`} 
-              fill
-              style={{ objectFit: 'cover' }}
-              priority // Prioritize loading cover image
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </div>
-        )}
+                 {/* Optional Featured Image */}
+         {note.featured_image_url && (
+            <div className="w-full h-64 relative">
+             <Image 
+               src={note.featured_image_url} 
+               alt={`${note.title} featured image`} 
+               fill
+               style={{ objectFit: 'cover' }}
+               priority // Prioritize loading featured image
+               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+             />
+           </div>
+         )}
 
         <div className="px-6 py-8 sm:px-10">
           {/* Optional Org Header */}

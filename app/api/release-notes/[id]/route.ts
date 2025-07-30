@@ -35,7 +35,16 @@ export async function GET(
 
     const { data: releaseNote, error: noteError } = await supabase
       .from('release_notes')
-      .select('*')
+      .select(`
+        *,
+        organizations!inner(
+          id,
+          name,
+          slug,
+          logo_url,
+          custom_domain
+        )
+      `)
       .eq('id', releaseNoteId)
       .eq('organization_id', orgMember.organization_id)
       .single()
@@ -98,7 +107,7 @@ export async function PUT(
 
     const allowedFields = [
       'title', 'description', 'content_markdown', 'content_html',
-      'version', 'is_public'
+      'version', 'is_public', 'status', 'published_at'
     ]
 
     // Only update provided fields

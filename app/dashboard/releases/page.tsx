@@ -13,10 +13,28 @@ import { Badge } from "@/subframe-ui/components/Badge";
 import { DropdownMenu } from "@/subframe-ui/components/DropdownMenu";
 import * as SubframeCore from "@subframe/core";
 import { IconButton } from "@/subframe-ui/components/IconButton";
+import { PublicPreview } from "@/components/release-notes/PublicPreview";
+
+// Simple markdown to HTML conversion function
+const convertMarkdownToHtml = (markdown: string): string => {
+  if (!markdown) return '';
+  
+  return markdown
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+    .replace(/\*(.*)\*/gim, '<em>$1</em>')
+    .replace(/`(.*)`/gim, '<code>$1</code>')
+    .replace(/\n/gim, '<br>')
+    .replace(/^- (.*$)/gim, '<li>$1</li>')
+    .replace(/<li>(.*)<\/li>/gim, '<ul><li>$1</li></ul>');
+};
 
 export default function ReleaseNotesPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const organization = useAuthStore((state) => state.organization);
   const releaseNotes = useReleaseNotesStore((state) => state.releaseNotes);
   const loading = useReleaseNotesStore((state) => state.isLoading);
   const error = useReleaseNotesStore((state) => state.error);
@@ -25,6 +43,8 @@ export default function ReleaseNotesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewReleaseNote, setPreviewReleaseNote] = useState<any>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -59,14 +79,39 @@ export default function ReleaseNotesPage() {
     }
   };
 
-  const handleAction = (action: string, releaseNote: any, data?: any) => {
+    const handleAction = async (action: string, releaseNote: any, data?: any) => {
     switch (action) {
       case "edit":
         // Go to editor page for all release notes
         router.push(`/dashboard/releases/editor/${releaseNote.id}`);
         break;
       case "view":
-        window.open(`/notes/${user?.id}/${releaseNote.slug}`, "_blank");
+        if (releaseNote.status === 'published' && releaseNote.is_public) {
+          // For published and public notes, open the live URL
+          const orgSlug = organization?.slug || 'default-org';
+          const publicUrl = `/notes/${orgSlug}/${releaseNote.slug}`;
+          window.open(publicUrl, "_blank");
+        } else {
+          // For drafts or private notes, fetch full data and show preview modal
+          try {
+            const response = await fetch(`/api/release-notes/${releaseNote.id}`);
+                         if (response.ok) {
+               const fullReleaseNote = await response.json();
+               setPreviewReleaseNote(fullReleaseNote);
+               setShowPreview(true);
+             } else {
+              console.error('Failed to fetch release note for preview');
+              // Fallback to using the basic data
+              setPreviewReleaseNote(releaseNote);
+              setShowPreview(true);
+            }
+          } catch (error) {
+            console.error('Error fetching release note for preview:', error);
+            // Fallback to using the basic data
+            setPreviewReleaseNote(releaseNote);
+            setShowPreview(true);
+          }
+        }
         break;
       case "history":
         // Open version history modal/page
@@ -196,7 +241,9 @@ export default function ReleaseNotesPage() {
                               asChild={true}
                             >
                               <DropdownMenu>
-                                <DropdownMenu.DropdownItem icon={<FeatherEye />} onClick={() => handleAction('view', note)} title="View Public Page">
+                                <DropdownMenu.DropdownItem icon={<FeatherEye />} onClick={async () => {
+                                  await handleAction('view', note);
+                                }} title="View Public Page">
                                   View
                                 </DropdownMenu.DropdownItem>
                                 <DropdownMenu.DropdownItem icon={<FeatherEdit2 />} onClick={() => handleAction('edit', note)} title="Edit Release Note">
@@ -219,6 +266,47 @@ export default function ReleaseNotesPage() {
           )}
         </div>
       </div>
+
+             {/* Preview Modal */}
+       {showPreview && previewReleaseNote && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Preview</h2>
+                <Button
+                  variant="neutral-tertiary"
+                  onClick={() => setShowPreview(false)}
+                >
+                  Close
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div className="border-b border-neutral-200 pb-4">
+                  <h1 className="text-2xl font-bold text-default-font mb-2">
+                    {previewReleaseNote.title || 'Untitled Release Note'}
+                  </h1>
+                  {previewReleaseNote.version && (
+                    <p className="text-sm text-neutral-500">Version: {previewReleaseNote.version}</p>
+                  )}
+                </div>
+                
+                                 <div className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none text-default-font">
+                   {previewReleaseNote.content_html ? (
+                     <div dangerouslySetInnerHTML={{ __html: previewReleaseNote.content_html }} />
+                   ) : previewReleaseNote.content ? (
+                     <div dangerouslySetInnerHTML={{ __html: previewReleaseNote.content }} />
+                   ) : previewReleaseNote.content_markdown ? (
+                     <div dangerouslySetInnerHTML={{ __html: convertMarkdownToHtml(previewReleaseNote.content_markdown) }} />
+                   ) : (
+                     <p className="text-neutral-500 italic">No content available</p>
+                   )}
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

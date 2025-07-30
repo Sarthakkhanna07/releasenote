@@ -281,21 +281,29 @@ export const useReleaseNotesStore = create<ReleaseNotesState>()(
           }
         },
         
-        publishReleaseNote: async (id: string) => {
+        publishReleaseNote: async (id: string, isPublic: boolean = false) => {
           try {
             set({ isPublishing: true, error: null }, false, 'publishReleaseNoteStart')
             const response = await fetch(`/api/release-notes/${id}/publish`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ is_public: isPublic })
             })
             
             if (!response.ok) throw new Error('Failed to publish release note')
             
-            get().updateReleaseNote(id, { status: 'published', published_at: new Date().toISOString() })
+            const result = await response.json()
+            get().updateReleaseNote(id, { 
+              status: 'published', 
+              published_at: new Date().toISOString(),
+              is_public: isPublic
+            })
             set({ isPublishing: false }, false, 'publishReleaseNoteSuccess')
+            return result
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to publish release note'
             set({ error: errorMessage, isPublishing: false }, false, 'publishReleaseNoteError')
+            throw error
           }
         },
         

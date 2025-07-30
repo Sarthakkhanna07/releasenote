@@ -49,12 +49,17 @@ export async function POST(
       )
     }
 
-    // Update status and published date
+    // Get request body to check if should be public
+    const body = await request.json().catch(() => ({}))
+    const { is_public = false } = body
+
+    // Update status, published date, and public flag
     const { data: updatedNote, error: updateError } = await supabase
       .from('release_notes')
       .update({
         status: 'published',
-        published_at: new Date().toISOString()
+        published_at: new Date().toISOString(),
+        is_public: is_public
       })
       .eq('id', releaseNoteId)
       .select()

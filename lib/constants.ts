@@ -26,7 +26,7 @@ export const SANITIZATION_CONFIG = {
 export const DB_CONSTANTS = {
   PUBLISHED_STATUS: 'published',
   ORGANIZATION_SELECT: 'id, name, logo_url',
-  RELEASE_NOTE_SELECT: 'title, content_html, published_at, cover_image_url'
+  RELEASE_NOTE_SELECT: 'title, content_html, published_at, featured_image_url'
 } as const
 
 // Date Format Constants

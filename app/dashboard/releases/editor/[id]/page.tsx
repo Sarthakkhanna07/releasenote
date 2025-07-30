@@ -7,8 +7,10 @@ import { Button } from "@/components/subframe-ui/ui/components/Button"
 import { Badge } from "@/components/subframe-ui/ui/components/Badge"
 import { RichTextEditor } from "@/components/editor/rich-text-editor"
 import { TextField } from "@/components/subframe-ui/ui/components/TextField"
-import { FeatherSave, FeatherEye, FeatherArrowLeft, FeatherZap, FeatherCheck } from "@subframe/core"
+import { FeatherSave, FeatherEye, FeatherArrowLeft, FeatherZap, FeatherCheck, FeatherX } from "@subframe/core"
 import Link from "next/link"
+import { PublicPreview } from "@/components/release-notes/PublicPreview"
+import { useAuthStore } from "@/lib/store"
 
 // Enhanced markdown to HTML converter for TipTap
 function convertMarkdownToHTML(markdown: string): string {
@@ -119,16 +121,20 @@ export default function ReleaseNotesEditorById() {
     const router = useRouter()
     const params = useParams()
     const releaseNoteId = params.id as string
+    const authOrganization = useAuthStore((state) => state.organization)
     
     const [content, setContent] = useState("")
     const [title, setTitle] = useState("")
     const [version, setVersion] = useState("")
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [publishing, setPublishing] = useState(false)
+    const [updatingVisibility, setUpdatingVisibility] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'source'>('editor')
     const [rawContent, setRawContent] = useState("")
     const [releaseNote, setReleaseNote] = useState<any>(null)
+    const [organization, setOrganization] = useState<any>(null)
 
     useEffect(() => {
         const loadReleaseNote = async () => {
@@ -143,6 +149,23 @@ export default function ReleaseNotesEditorById() {
                 if (response.ok) {
                     const releaseNoteData = await response.json()
                     setReleaseNote(releaseNoteData)
+                    
+                    // Extract organization data if available
+                    if (releaseNoteData.organizations) {
+                        setOrganization(releaseNoteData.organizations)
+                    } else {
+                        // Fallback: fetch organization data separately
+                        try {
+                            const orgResponse = await fetch('/api/organizations/profile')
+                            if (orgResponse.ok) {
+                                const orgData = await orgResponse.json()
+                                setOrganization(orgData)
+                            }
+                        } catch (error) {
+                            console.warn('Failed to fetch organization data:', error)
+                        }
+                    }
+                    
                     setTitle(releaseNoteData.title || '')
                     
                     // Convert markdown to HTML for TipTap editor
@@ -169,6 +192,9 @@ export default function ReleaseNotesEditorById() {
                     // Store raw markdown for source view
                     setRawContent(releaseNoteData.content_markdown || releaseNoteData.content || '')
                     setVersion(releaseNoteData.version || '')
+                    
+                    // Set the public/private state based on the loaded release note
+                    setIsPublic(releaseNoteData.is_public || false)
                     
                     // If this is a new draft with no content at all, provide starter content
                     if (!releaseNoteData.content && !releaseNoteData.content_markdown && !releaseNoteData.content_html) {
@@ -237,10 +263,116 @@ export default function ReleaseNotesEditorById() {
         }
     }
 
+    const [showPublicPreview, setShowPublicPreview] = useState(false)
+    const [showVisibilitySettings, setShowVisibilitySettings] = useState(false)
+    const [isPublic, setIsPublic] = useState(false)
+
+    const handleVisibilityChange = async (newIsPublished: boolean) => {
+        setUpdatingVisibility(true)
+        setIsPublic(newIsPublished) // Keep this for UI state, but it represents published/draft
+        
+        try {
+            if (newIsPublished) {
+                // If making published, first save the current content, then publish
+                await handleSave()
+                
+                // Now publish (same as publish button)
+                const publishResponse = await fetch(`/api/release-notes/${releaseNoteId}/publish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_public: true })
+                })
+                
+                if (publishResponse.ok) {
+                    console.log('Release note published successfully')
+                    // Update the release note state
+                    if (releaseNote) {
+                        setReleaseNote({
+                            ...releaseNote,
+                            status: 'published',
+                            published_at: new Date().toISOString()
+                        })
+                    }
+                    // Show success message
+                    alert('Release note published successfully!')
+                } else {
+                    console.error('Failed to publish release note')
+                    // Revert the state if the publish failed
+                    setIsPublic(false)
+                    throw new Error('Failed to publish release note')
+                }
+            } else {
+                // If making draft, update to draft status
+                const response = await fetch(`/api/release-notes/${releaseNoteId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        status: 'draft',
+                        published_at: null // Remove published_at when making draft
+                    })
+                })
+                
+                if (response.ok) {
+                    console.log('Release note reverted to draft')
+                    // Update the release note state
+                    if (releaseNote) {
+                        setReleaseNote({
+                            ...releaseNote,
+                            status: 'draft',
+                            published_at: null
+                        })
+                    }
+                    // Show success message
+                    alert('Release note saved as draft')
+                } else {
+                    console.error('Failed to revert to draft')
+                    // Revert the state if the update failed
+                    setIsPublic(true)
+                    throw new Error('Failed to revert to draft')
+                }
+            }
+        } catch (error) {
+            console.error('Error updating status:', error)
+            // Revert the state if the update failed
+            setIsPublic(!newIsPublished)
+        } finally {
+            setUpdatingVisibility(false)
+        }
+    }
+
     const handlePublish = async () => {
-        await handleSave()
-        // TODO: Implement publish functionality
-        router.push('/dashboard/releases')
+        setPublishing(true)
+        setError(null)
+        
+        try {
+            await handleSave()
+            
+            // Publish with public/private setting
+            const response = await fetch(`/api/release-notes/${releaseNoteId}/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_public: isPublic })
+            })
+            
+            if (response.ok) {
+                const result = await response.json()
+                console.log('Release note published successfully')
+                
+                // Show success message
+                alert(`Release note published successfully! ${isPublic ? 'It is now publicly accessible.' : 'It is private and only visible to organization members.'}`)
+                
+                router.push('/dashboard/releases')
+            } else {
+                throw new Error('Failed to publish release note')
+            }
+        } catch (error) {
+            console.error('Failed to publish:', error)
+            setError('Failed to publish release note')
+        } finally {
+            setPublishing(false)
+        }
     }
 
     if (loading) {
@@ -300,9 +432,12 @@ export default function ReleaseNotesEditorById() {
                                     }
                                 </span>
                                 {releaseNote && (
-                                    <Badge variant={releaseNote.status === 'published' ? 'success' : releaseNote.status === 'draft' ? 'neutral' : 'warning'}>
-                                        {releaseNote.status.charAt(0).toUpperCase() + releaseNote.status.slice(1)}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant={releaseNote.status === 'published' ? 'success' : releaseNote.status === 'draft' ? 'neutral' : 'warning'}>
+                                            {releaseNote.status === 'published' && <FeatherEye className="h-3 w-3 mr-1" />}
+                                            {releaseNote.status.charAt(0).toUpperCase() + releaseNote.status.slice(1)}
+                                        </Badge>
+                                    </div>
                                 )}
                             </div>
                             <span className="text-base text-neutral-500">
@@ -315,33 +450,14 @@ export default function ReleaseNotesEditorById() {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                        {/* View Mode Toggle */}
-                        <div className="flex items-center border border-neutral-200 rounded-lg overflow-hidden">
-                            <Button
-                                variant={viewMode === 'editor' ? 'brand-secondary' : 'neutral-tertiary'}
-                                size="small"
-                                onClick={() => setViewMode('editor')}
-                                className="rounded-none border-0"
-                            >
-                                Editor
-                            </Button>
-                            <Button
-                                variant={viewMode === 'preview' ? 'brand-secondary' : 'neutral-tertiary'}
-                                size="small"
-                                onClick={() => setViewMode('preview')}
-                                className="rounded-none border-0"
-                            >
-                                Preview
-                            </Button>
-                            <Button
-                                variant={viewMode === 'source' ? 'brand-secondary' : 'neutral-tertiary'}
-                                size="small"
-                                onClick={() => setViewMode('source')}
-                                className="rounded-none border-0"
-                            >
-                                Source
-                            </Button>
-                        </div>
+                        <Button
+                            variant="neutral-tertiary"
+                            icon={<FeatherEye />}
+                            onClick={() => setShowVisibilitySettings(true)}
+                            size="small"
+                        >
+                            Status
+                        </Button>
                         <Button
                             variant="neutral-primary"
                             icon={<FeatherSave />}
@@ -352,12 +468,28 @@ export default function ReleaseNotesEditorById() {
                             {saving ? 'Saving...' : 'Save Draft'}
                         </Button>
                         <Button
-                            variant="brand-primary"
-                            icon={<FeatherCheck />}
-                            onClick={handlePublish}
+                            variant="neutral-secondary"
+                            icon={<FeatherEye />}
+                            onClick={() => setShowPublicPreview(true)}
                             size="medium"
                         >
-                            Publish
+                            Public Preview
+                        </Button>
+                        <Button
+                            variant="brand-primary"
+                            icon={publishing ? undefined : <FeatherCheck />}
+                            onClick={handlePublish}
+                            disabled={publishing}
+                            size="medium"
+                        >
+                            {publishing ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Publishing...
+                                </>
+                            ) : (
+                                'Publish'
+                            )}
                         </Button>
                     </div>
                 </div>
@@ -390,16 +522,50 @@ export default function ReleaseNotesEditorById() {
                                 </TextField>
                             </div>
 
+
+
                             {/* Content Editor/Preview/Source */}
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-default-font">
-                                    Release Notes Content
-                                </label>
-                                <p className="text-sm text-neutral-600 mb-4">
-                                    {viewMode === 'editor' && 'Use the rich text editor to format your release notes with headings, lists, links, and more'}
-                                    {viewMode === 'preview' && 'Preview how your release notes will look when published'}
-                                    {viewMode === 'source' && 'View and edit the raw markdown source of your release notes'}
-                                </p>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-default-font">
+                                            Release Notes Content
+                                        </label>
+                                        <p className="text-sm text-neutral-600">
+                                            {viewMode === 'editor' && 'Use the rich text editor to format your release notes with headings, lists, links, and more'}
+                                            {viewMode === 'preview' && 'Preview how your release notes will look when published'}
+                                            {viewMode === 'source' && 'View and edit the raw markdown source of your release notes'}
+                                        </p>
+                                    </div>
+                                    
+                                    {/* View Mode Toggle */}
+                                    <div className="flex items-center border border-neutral-200 rounded-lg overflow-hidden">
+                                        <Button
+                                            variant={viewMode === 'editor' ? 'brand-secondary' : 'neutral-tertiary'}
+                                            size="small"
+                                            onClick={() => setViewMode('editor')}
+                                            className="rounded-none border-0"
+                                        >
+                                            Editor
+                                        </Button>
+                                        <Button
+                                            variant={viewMode === 'preview' ? 'brand-secondary' : 'neutral-tertiary'}
+                                            size="small"
+                                            onClick={() => setViewMode('preview')}
+                                            className="rounded-none border-0"
+                                        >
+                                            Preview
+                                        </Button>
+                                        <Button
+                                            variant={viewMode === 'source' ? 'brand-secondary' : 'neutral-tertiary'}
+                                            size="small"
+                                            onClick={() => setViewMode('source')}
+                                            className="rounded-none border-0"
+                                        >
+                                            Source
+                                        </Button>
+                                    </div>
+                                </div>
                                 
                                 {/* Rich Text Editor */}
                                 {viewMode === 'editor' && (
@@ -415,7 +581,7 @@ export default function ReleaseNotesEditorById() {
                                 {viewMode === 'preview' && (
                                     <div className="border border-neutral-200 rounded-lg p-6 bg-white min-h-[400px]">
                                         <div 
-                                            className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none"
+                                            className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none text-default-font"
                                             dangerouslySetInnerHTML={{ __html: content }}
                                         />
                                     </div>
@@ -428,16 +594,16 @@ export default function ReleaseNotesEditorById() {
                                             <div className="bg-neutral-50 px-4 py-2 border-b border-neutral-200">
                                                 <span className="text-sm font-medium text-neutral-700">Markdown Source</span>
                                             </div>
-                                            <textarea
-                                                value={rawContent}
-                                                onChange={(e) => {
-                                                    setRawContent(e.target.value)
-                                                    // Convert markdown to HTML for the editor
-                                                    const htmlContent = convertMarkdownToHTML(e.target.value)
-                                                    setContent(htmlContent)
-                                                }}
-                                                className="w-full h-64 p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
-                                                placeholder="# Release Notes v1.0.0
+                                                                                         <textarea
+                                                 value={rawContent}
+                                                 onChange={(e) => {
+                                                     setRawContent(e.target.value)
+                                                     // Convert markdown to HTML for the editor
+                                                     const htmlContent = convertMarkdownToHTML(e.target.value)
+                                                     setContent(htmlContent)
+                                                 }}
+                                                 className="w-full h-64 p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 text-default-font bg-white"
+                                                 placeholder="# Release Notes v1.0.0
 
 ## New Features
 - Feature 1
@@ -446,18 +612,18 @@ export default function ReleaseNotesEditorById() {
 ## Bug Fixes
 - Fix 1
 - Fix 2"
-                                            />
+                                             />
                                         </div>
                                         
                                         <div className="border border-neutral-200 rounded-lg overflow-hidden">
                                             <div className="bg-neutral-50 px-4 py-2 border-b border-neutral-200">
                                                 <span className="text-sm font-medium text-neutral-700">Generated HTML</span>
                                             </div>
-                                            <div className="p-4 bg-neutral-50 max-h-64 overflow-y-auto">
-                                                <pre className="text-xs text-neutral-600 whitespace-pre-wrap font-mono">
-                                                    {content}
-                                                </pre>
-                                            </div>
+                                                                                         <div className="p-4 bg-neutral-50 max-h-64 overflow-y-auto">
+                                                 <pre className="text-xs text-neutral-600 whitespace-pre-wrap font-mono text-default-font">
+                                                     {content}
+                                                 </pre>
+                                             </div>
                                         </div>
                                     </div>
                                 )}
@@ -505,6 +671,134 @@ export default function ReleaseNotesEditorById() {
                     </div>
                 </div>
             </div>
+
+            {/* Public Preview Modal */}
+            {showPublicPreview && releaseNote && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-bold">Public Preview</h2>
+                                <Button
+                                    variant="neutral-tertiary"
+                                    onClick={() => setShowPublicPreview(false)}
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                            <PublicPreview
+                                releaseNote={{
+                                    id: releaseNote.id,
+                                    title: title,
+                                    slug: releaseNote.slug,
+                                    content_html: content,
+                                    status: releaseNote.status,
+                                    is_public: isPublic
+                                }}
+                                organization={{
+                                    slug: organization?.slug || authOrganization?.slug || 'default-org',
+                                    name: organization?.name || authOrganization?.name || 'Your Organization',
+                                    logo_url: organization?.logo_url || authOrganization?.logo_url,
+                                    custom_domain: organization?.custom_domain || authOrganization?.custom_domain
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Visibility Settings Modal */}
+            {showVisibilitySettings && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold text-default-font">Publishing Status</h2>
+                                <Button
+                                    variant="neutral-tertiary"
+                                    onClick={() => setShowVisibilitySettings(false)}
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                            
+                            <div className="space-y-6">
+                                <div className="space-y-4">
+                                    <label className="flex items-start gap-4 cursor-pointer p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
+                                        <input
+                                            type="radio"
+                                            name="visibility"
+                                            checked={isPublic}
+                                            onChange={() => handleVisibilityChange(true)}
+                                            className="text-brand-600 mt-1"
+                                        />
+                                                                                    <div className="flex items-start gap-3">
+                                            <FeatherEye className="h-5 w-5 text-default-font mt-0.5" />
+                                            <div className="flex-1">
+                                                <span className="text-default-font font-medium text-lg">Published</span>
+                                                <p className="text-sm text-neutral-600 mb-3">Make this release note live and accessible to your audience</p>
+                                                <div className="text-sm text-neutral-500 bg-neutral-50 p-3 rounded border">
+                                                    <strong>Public URL:</strong> {organization?.slug || authOrganization?.slug || 'your-org'}/{releaseNote?.slug || 'release-notes'}
+                                                    <br />
+                                                    <span className="text-neutral-400">This link will be accessible to customers, users, and the general public</span>
+                                                    <br />
+                                                    <span className="text-brand-600 font-medium">✅ This will publish your release notes</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    
+                                    <label className="flex items-start gap-4 cursor-pointer p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
+                                        <input
+                                            type="radio"
+                                            name="visibility"
+                                            checked={!isPublic}
+                                            onChange={() => handleVisibilityChange(false)}
+                                            className="text-brand-600 mt-1"
+                                        />
+                                                                                    <div className="flex items-start gap-3">
+                                            <FeatherX className="h-5 w-5 text-default-font mt-0.5" />
+                                            <div className="flex-1">
+                                                <span className="text-default-font font-medium text-lg">Draft</span>
+                                                <p className="text-sm text-neutral-600 mb-3">Keep this release note as a draft for further editing</p>
+                                                <div className="text-sm text-neutral-500 bg-neutral-50 p-3 rounded border">
+                                                    <strong>Draft Status:</strong> Only visible in your dashboard
+                                                    <br />
+                                                    <span className="text-neutral-400">Perfect for work-in-progress or when you're not ready to publish</span>
+                                                    <br />
+                                                    <span className="text-neutral-600 font-medium">📝 This will save as a draft</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                {updatingVisibility && (
+                                    <div className="flex items-center justify-center gap-2 text-sm text-neutral-500 p-4 bg-neutral-50 rounded-lg">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-neutral-400"></div>
+                                        Updating publishing status...
+                                    </div>
+                                )}
+                                
+                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200">
+                                    <Button
+                                        variant="neutral-tertiary"
+                                        onClick={() => setShowVisibilitySettings(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        variant="brand-primary"
+                                        onClick={() => setShowVisibilitySettings(false)}
+                                    >
+                                        Done
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DefaultPageLayout>
     )
 }

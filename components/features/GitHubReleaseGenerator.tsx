@@ -230,10 +230,55 @@ export function GitHubReleaseGenerator() {
     }
   };
   
-  // Placeholder for future publish functionality
-  const handlePublish = () => {
-     alert("Publish functionality coming soon!");
-  }
+  // Publish functionality with public/private option
+  const handlePublish = async () => {
+    if (!generatedContent && !editedContent) return;
+    
+    const isPublic = window.confirm(
+      "Do you want to make this release note public?\n\n" +
+      "Public: Anyone can view and share the release note\n" +
+      "Private: Only organization members can view it\n\n" +
+      "Click OK for Public, Cancel for Private"
+    );
+    
+    setLoading(true);
+    setError('');
+    try {
+      // First save as draft if we have a draft ID
+      if (draftId) {
+        const { updateReleaseNote } = useReleaseNotesActions();
+        await updateReleaseNote(draftId, {
+          title: `GitHub Release - ${selectedRepo} - ${new Date().toLocaleDateString()}`,
+          content_markdown: editMode ? editedContent : generatedContent,
+          status: 'draft',
+        });
+      } else {
+        // Create new draft if no draft ID
+        await createReleaseNote({
+          title: `GitHub Release - ${selectedRepo} - ${new Date().toLocaleDateString()}`,
+          content_markdown: editMode ? editedContent : generatedContent,
+          status: 'draft',
+        });
+      }
+      
+      // Then publish
+      const { publishReleaseNote } = useReleaseNotesActions();
+      await publishReleaseNote(draftId || 'temp-id', isPublic);
+      
+      alert(`Release note published successfully! ${isPublic ? 'It is now publicly accessible.' : 'It is private and only visible to organization members.'}`);
+      
+      setSelectedRepo('');
+      setGeneratedContent('');
+      setEditedContent('');
+      setEditMode(false);
+      setDraftId(null);
+      setStep(1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to publish release note');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Function to reset and select a new repository
   const handleReset = () => {
