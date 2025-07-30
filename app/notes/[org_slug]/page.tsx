@@ -1,5 +1,4 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { Database } from '@/types/supabase'
 import { EnhancedReleaseNotesList } from '@/components/public/enhanced-release-notes-list'
@@ -9,9 +8,13 @@ type Props = {
 }
 
 async function getOrganizationReleaseNotes(orgSlug: string) {
-  const supabase = createServerComponentClient<Database>({ cookies })
+  // Create a public Supabase client (no authentication required for public pages)
+  const supabase = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
-  // Fetch the organization with branding info and custom CSS
+  // Fetch the organization with branding info
   const { data: orgData, error: orgError } = await supabase
     .from('organizations')
     .select(`
@@ -25,8 +28,7 @@ async function getOrganizationReleaseNotes(orgSlug: string) {
       brand_color,
       custom_domain,
       domain_verified,
-      custom_css,
-      custom_css_enabled
+      logo_url
     `)
     .eq('slug', orgSlug)
     .single()
@@ -35,10 +37,10 @@ async function getOrganizationReleaseNotes(orgSlug: string) {
     return null
   }
 
-  // Fetch published and public release notes with enhanced fields
+  // Fetch published and public release notes
   const { data: notesData, error: notesError } = await supabase
     .from('release_notes')
-    .select('id, title, slug, published_at, content_html, category, tags, featured_image_url, excerpt, views')
+    .select('id, title, slug, published_at, content_html, views')
     .eq('organization_id', orgData.id)
     .eq('status', 'published')
     .eq('is_public', true)

@@ -1,5 +1,4 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { Database, ReleaseNoteWithOrganization } from '@/types/supabase'
 import Image from 'next/image'
@@ -25,8 +24,11 @@ async function getReleaseNote(orgSlug: string, releaseSlug: string) {
     logger.warn('Cache read failed, proceeding with database query', { error })
   }
 
-  // Create a Supabase client configured for server components
-  const supabase = createServerComponentClient<Database>({ cookies })
+  // Create a public Supabase client (no authentication required for public pages)
+  const supabase = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
      // Optimized: Single query with JOIN to fetch both organization and release note data
    const { data, error } = await supabase

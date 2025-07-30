@@ -349,19 +349,29 @@ export default function ReleaseNotesEditorById() {
         try {
             await handleSave()
             
-            // Publish with public/private setting
+            // Publish with public setting (default to public when using Publish button)
             const response = await fetch(`/api/release-notes/${releaseNoteId}/publish`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_public: isPublic })
+                body: JSON.stringify({ is_public: true })
             })
             
             if (response.ok) {
                 const result = await response.json()
                 console.log('Release note published successfully')
                 
+                // Update the local state to reflect the published status
+                setIsPublic(true)
+                if (releaseNote) {
+                    setReleaseNote({
+                        ...releaseNote,
+                        status: 'published',
+                        published_at: new Date().toISOString()
+                    })
+                }
+                
                 // Show success message
-                alert(`Release note published successfully! ${isPublic ? 'It is now publicly accessible.' : 'It is private and only visible to organization members.'}`)
+                alert('Release note published successfully! It is now publicly accessible.')
                 
                 router.push('/dashboard/releases')
             } else {
