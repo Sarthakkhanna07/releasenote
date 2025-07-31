@@ -48,7 +48,7 @@ import {
   AlignRightIcon,
   AlignJustifyIcon
 } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { getSupabaseClient } from '@/lib/supabase'
 
 interface RichTextEditorProps {
@@ -68,10 +68,54 @@ export function RichTextEditor({
   enableAI = true,
   onAIGenerate
 }: RichTextEditorProps) {
+  // Add custom styles for scrollbar
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.textContent = `
+      .tiptap-editor-scroll::-webkit-scrollbar {
+        width: 8px;
+      }
+      .tiptap-editor-scroll::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+      .tiptap-editor-scroll::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+      }
+      .tiptap-editor-scroll::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+    `
+    document.head.appendChild(style)
+    return () => {
+      document.head.removeChild(style)
+    }
+  }, [])
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [selectedColor, setSelectedColor] = useState('#000000')
+  const colorPickerRef = useRef<HTMLDivElement>(null)
   const supabase = getSupabaseClient()
+
+  // Close color picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
+        setShowColorPicker(false)
+      }
+    }
+
+    if (showColorPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showColorPicker])
 
   const editor = useEditor({
     immediatelyRender: false, // Fix SSR hydration issue
@@ -110,13 +154,13 @@ export function RichTextEditor({
       }),
       TaskList.configure({
         HTMLAttributes: {
-          class: 'not-prose',
+          class: 'task-list',
         },
       }),
       TaskItem.configure({
-        nested: true,
+        nested: false,
         HTMLAttributes: {
-          class: 'flex items-start gap-2 not-prose',
+          class: 'task-item',
         },
       }),
       Callout,
@@ -125,7 +169,7 @@ export function RichTextEditor({
     content,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl mx-auto focus:outline-none min-h-[300px] p-4',
+        class: 'tiptap focus:outline-none min-h-[300px] p-4',
       },
     },
     onUpdate: ({ editor }) => {
@@ -198,6 +242,12 @@ const addImage = useCallback(() => {
     editor?.chain().focus().setCallout({ type }).run()
   }, [editor])
 
+  const setTextColor = useCallback((color: string) => {
+    editor?.chain().focus().setColor(color).run()
+    setSelectedColor(color)
+    setShowColorPicker(false)
+  }, [editor])
+
   const addCodeBlock = useCallback(() => {
     editor?.chain().focus().toggleCodeBlock().run()
   }, [editor])
@@ -218,6 +268,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleBold().run()}
             disabled={!editor.can().toggleBold()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
+            title="Bold (Ctrl+B)"
           >
             <BoldIcon className="h-4 w-4" />
           </Button>
@@ -227,6 +278,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleItalic().run()}
             disabled={!editor.can().toggleItalic()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
+            title="Italic (Ctrl+I)"
           >
             <ItalicIcon className="h-4 w-4" />
           </Button>
@@ -236,6 +288,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             disabled={!editor.can().toggleUnderline()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('underline') ? 'bg-gray-200' : ''}`}
+            title="Underline (Ctrl+U)"
           >
             <UnderlineIcon className="h-4 w-4" />
           </Button>
@@ -245,6 +298,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleStrike().run()}
             disabled={!editor.can().toggleStrike()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('strike') ? 'bg-gray-200' : ''}`}
+            title="Strikethrough"
           >
             <StrikethroughIcon className="h-4 w-4" />
           </Button>
@@ -254,9 +308,70 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleHighlight().run()}
             disabled={!editor.can().toggleHighlight()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('highlight') ? 'bg-gray-200' : ''}`}
+            title="Highlight"
           >
             <HighlighterIcon className="h-4 w-4" />
           </Button>
+          <div className="relative" ref={colorPickerRef}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              className="opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100"
+              title="Text Color"
+            >
+              <div className="flex items-center gap-1">
+                <div 
+                  className="w-3 h-3 rounded border border-gray-300" 
+                  style={{ backgroundColor: selectedColor }}
+                />
+                <span className="text-xs">A</span>
+              </div>
+            </Button>
+            {showColorPicker && (
+              <div className="absolute top-full left-0 mt-1 p-3 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[280px]">
+                <div className="mb-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Quick Colors</h4>
+                  <div className="grid grid-cols-8 gap-1.5">
+                    {[
+                      '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff',
+                      '#ffa500', '#800080', '#008000', '#ffc0cb', '#a52a2a', '#808080', '#000080', '#800000',
+                      '#ff6347', '#32cd32', '#4169e1', '#ff1493', '#00ced1', '#ffd700', '#ff4500', '#228b22',
+                      '#1e90ff', '#ff69b4', '#20b2aa', '#daa520', '#dc143c', '#4b0082', '#c71585', '#48d1cc'
+                    ].map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setTextColor(color)}
+                        className={`w-7 h-7 rounded-md border-2 transition-all duration-200 hover:scale-110 hover:shadow-md ${
+                          selectedColor === color ? 'border-gray-400 shadow-md' : 'border-gray-200'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="border-t border-gray-200 pt-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Custom Color</h4>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={selectedColor}
+                      onChange={(e) => setTextColor(e.target.value)}
+                      className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={selectedColor}
+                      onChange={(e) => setTextColor(e.target.value)}
+                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                      placeholder="#000000"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Headings */}
@@ -267,6 +382,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             disabled={!editor.can().toggleHeading({ level: 1 })}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('heading', { level: 1 }) ? 'bg-gray-200' : ''}`}
+            title="Heading 1"
           >
             <Heading1Icon className="h-4 w-4" />
           </Button>
@@ -276,6 +392,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             disabled={!editor.can().toggleHeading({ level: 2 })}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('heading', { level: 2 }) ? 'bg-gray-200' : ''}`}
+            title="Heading 2"
           >
             <Heading2Icon className="h-4 w-4" />
           </Button>
@@ -285,6 +402,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             disabled={!editor.can().toggleHeading({ level: 3 })}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('heading', { level: 3 }) ? 'bg-gray-200' : ''}`}
+            title="Heading 3"
           >
             <Heading3Icon className="h-4 w-4" />
           </Button>
@@ -298,6 +416,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             disabled={!editor.can().toggleBulletList()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('bulletList') ? 'bg-gray-200' : ''}`}
+            title="Bullet List"
           >
             <ListIcon className="h-4 w-4" />
           </Button>
@@ -307,6 +426,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             disabled={!editor.can().toggleOrderedList()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('orderedList') ? 'bg-gray-200' : ''}`}
+            title="Numbered List"
           >
             <ListOrderedIcon className="h-4 w-4" />
           </Button>
@@ -316,6 +436,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleTaskList().run()}
             disabled={!editor.can().toggleTaskList()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('taskList') ? 'bg-gray-200' : ''}`}
+            title="Task List"
           >
             <ListChecksIcon className="h-4 w-4" />
           </Button>
@@ -329,6 +450,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
             disabled={!editor.can().setTextAlign('left')}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive({ textAlign: 'left' }) ? 'bg-gray-200' : ''}`}
+            title="Align Left"
           >
             <AlignLeftIcon className="h-4 w-4" />
           </Button>
@@ -338,6 +460,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
             disabled={!editor.can().setTextAlign('center')}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive({ textAlign: 'center' }) ? 'bg-gray-200' : ''}`}
+            title="Align Center"
           >
             <AlignCenterIcon className="h-4 w-4" />
           </Button>
@@ -347,6 +470,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
             disabled={!editor.can().setTextAlign('right')}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive({ textAlign: 'right' }) ? 'bg-gray-200' : ''}`}
+            title="Align Right"
           >
             <AlignRightIcon className="h-4 w-4" />
           </Button>
@@ -356,6 +480,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().setTextAlign('justify').run()}
             disabled={!editor.can().setTextAlign('justify')}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-gray-200' : ''}`}
+            title="Justify Text"
           >
             <AlignJustifyIcon className="h-4 w-4" />
           </Button>
@@ -369,6 +494,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             disabled={!editor.can().toggleBlockquote()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('blockquote') ? 'bg-gray-200' : ''}`}
+            title="Blockquote"
           >
             <QuoteIcon className="h-4 w-4" />
           </Button>
@@ -378,6 +504,7 @@ const addImage = useCallback(() => {
             onClick={addCodeBlock}
             disabled={!editor.can().toggleCodeBlock()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('codeBlockEnhanced') ? 'bg-gray-200' : ''}`}
+            title="Code Block"
           >
             <CodeIcon className="h-4 w-4" />
           </Button>
@@ -445,6 +572,7 @@ const addImage = useCallback(() => {
             onClick={setLink}
             disabled={!editor.can().setLink({ href: '' })}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100 ${editor.isActive('link') ? 'bg-gray-200' : ''}`}
+            title="Insert Link"
           >
             <LinkIcon className="h-4 w-4" />
           </Button>
@@ -453,6 +581,7 @@ const addImage = useCallback(() => {
             size="sm"
             onClick={addImage}
             disabled={!editor.can().setImage({ src: '' })}
+            title="Insert Image"
           >
             <ImageIcon className="h-4 w-4" />
           </Button>
@@ -461,6 +590,7 @@ const addImage = useCallback(() => {
             size="sm"
             onClick={addTable}
             disabled={!editor.can().insertTable({ rows: 3, cols: 3, withHeaderRow: true })}
+            title="Insert Table"
           >
             <TableIcon className="h-4 w-4" />
           </Button>
@@ -474,6 +604,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100`}
+            title="Undo (Ctrl+Z)"
           >
             <UndoIcon className="h-4 w-4" />
           </Button>
@@ -483,6 +614,7 @@ const addImage = useCallback(() => {
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
             className={`opacity-100 text-black disabled:opacity-60 disabled:text-gray-400 disabled:bg-gray-100`}
+            title="Redo (Ctrl+Y)"
           >
             <RedoIcon className="h-4 w-4" />
           </Button>
@@ -505,19 +637,19 @@ const addImage = useCallback(() => {
       </div>
 
       {/* Editor Content */}
-      <div className="min-h-[300px]">
+      <div className="min-h-[300px] max-h-[70vh] overflow-y-auto tiptap-editor-scroll">
         <EditorContent 
           editor={editor} 
           className="focus-within:outline-none min-h-[300px] p-4 bg-white text-black"
         />
+        
+        {/* Placeholder when empty */}
+        {editor.isEmpty && (
+          <div className="absolute top-4 left-4 text-gray-400 pointer-events-none">
+            {placeholder}
+          </div>
+        )}
       </div>
-
-      {/* Placeholder when empty */}
-      {editor.isEmpty && (
-        <div className="absolute top-20 left-4 text-gray-400 pointer-events-none">
-          {placeholder}
-        </div>
-      )}
     </div>
   )
 }

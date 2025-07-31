@@ -136,10 +136,9 @@ export default function ReleaseNotesPage() {
   const tabCounts = getTabCounts();
 
   return (
-    <div className="flex h-full w-full flex-col items-start">
-      <div className="container max-w-none flex w-full grow shrink-0 basis-0 flex-col items-start gap-8 bg-default-background py-12">
-        {/* Main Content Card */}
-        <div className="w-full rounded-xl border border-neutral-200 bg-white px-8 py-8 flex flex-col gap-6">
+    <div className="flex w-full flex-col items-start gap-8 p-8">
+      {/* Main Content */}
+      <div className="w-full flex flex-col gap-6">
           {/* Header Row */}
           <div className="flex w-full items-center justify-between gap-4 mb-2">
             <div className="flex flex-col gap-1">
@@ -265,7 +264,6 @@ export default function ReleaseNotesPage() {
             </div>
           )}
         </div>
-      </div>
 
              {/* Preview Modal */}
        {showPreview && previewReleaseNote && (
@@ -291,7 +289,7 @@ export default function ReleaseNotesPage() {
                   )}
                 </div>
                 
-                                 <div className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none text-default-font">
+                                 <div className="tiptap prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none text-default-font">
                    {previewReleaseNote.content_html ? (
                      <div dangerouslySetInnerHTML={{ __html: previewReleaseNote.content_html }} />
                    ) : previewReleaseNote.content ? (

@@ -10,7 +10,179 @@ import { TextField } from "@/components/subframe-ui/ui/components/TextField"
 import { FeatherSave, FeatherEye, FeatherArrowLeft, FeatherZap, FeatherCheck, FeatherX } from "@subframe/core"
 import Link from "next/link"
 import { PublicPreview } from "@/components/release-notes/PublicPreview"
-import { useAuthStore } from "@/lib/store"
+ import { useAuthStore } from "@/lib/store"
+ 
+ // Function to convert HTML back to markdown
+ function convertHTMLToMarkdown(html: string): string {
+     if (!html) return ''
+     
+     console.log('🔄 Converting HTML to markdown...')
+     console.log('Input HTML:', html)
+     
+     // Create a temporary div to parse the HTML
+     const tempDiv = document.createElement('div')
+     tempDiv.innerHTML = html
+     
+     let markdown = ''
+     
+     // Process each child node
+     for (let i = 0; i < tempDiv.childNodes.length; i++) {
+         const node = tempDiv.childNodes[i]
+         
+         if (node.nodeType === Node.TEXT_NODE) {
+             // Handle text nodes
+             const text = node.textContent?.trim()
+             if (text) {
+                 markdown += text + '\n\n'
+             }
+         } else if (node.nodeType === Node.ELEMENT_NODE) {
+             const element = node as Element
+             const tagName = element.tagName.toLowerCase()
+             const textContent = element.textContent?.trim() || ''
+             
+             switch (tagName) {
+                 case 'h1':
+                     markdown += `# ${textContent}\n\n`
+                     break
+                 case 'h2':
+                     markdown += `## ${textContent}\n\n`
+                     break
+                 case 'h3':
+                     markdown += `### ${textContent}\n\n`
+                     break
+                 case 'p':
+                     if (textContent) {
+                         markdown += `${textContent}\n\n`
+                     }
+                     break
+                 case 'ul':
+                     // Handle unordered lists
+                     const listItems = element.querySelectorAll('li')
+                     listItems.forEach(item => {
+                         markdown += `- ${item.textContent?.trim() || ''}\n`
+                     })
+                     markdown += '\n'
+                     break
+                 case 'ol':
+                     // Handle ordered lists
+                     const orderedItems = element.querySelectorAll('li')
+                     orderedItems.forEach((item, index) => {
+                         markdown += `${index + 1}. ${item.textContent?.trim() || ''}\n`
+                     })
+                     markdown += '\n'
+                     break
+                 case 'li':
+                     // Handle standalone list items
+                     markdown += `- ${textContent}\n`
+                     break
+                 case 'strong':
+                 case 'b':
+                     markdown += `**${textContent}**`
+                     break
+                 case 'em':
+                 case 'i':
+                     markdown += `*${textContent}*`
+                     break
+                 case 'code':
+                     markdown += `\`${textContent}\``
+                     break
+                 case 'a':
+                     const href = element.getAttribute('href') || ''
+                     markdown += `[${textContent}](${href})`
+                     break
+                 case 'blockquote':
+                     const lines = textContent.split('\n')
+                     lines.forEach(line => {
+                         if (line.trim()) {
+                             markdown += `> ${line.trim()}\n`
+                         }
+                     })
+                     markdown += '\n'
+                     break
+                 default:
+                     // For any other tags, just get the text content
+                     if (textContent) {
+                         markdown += `${textContent}\n\n`
+                     }
+                     break
+             }
+         }
+     }
+     
+     // Clean up extra newlines
+     markdown = markdown.replace(/\n{3,}/g, '\n\n').trim()
+     
+     console.log('✅ Final markdown output:', markdown)
+     return markdown
+ }
+ 
+ // Function to format HTML with proper indentation
+function formatHTML(html: string): string {
+    if (!html) return ''
+    
+    // Create a temporary div to parse the HTML
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = html
+    
+    // Function to recursively format elements with indentation
+    function formatElement(element: Element, indent: number = 0): string {
+        const spaces = '  '.repeat(indent)
+        let result = ''
+        
+        // Handle element nodes
+        const tagName = element.tagName.toLowerCase()
+        
+        // Opening tag
+        let openingTag = `<${tagName}`
+        
+        // Add attributes
+        for (let i = 0; i < element.attributes.length; i++) {
+            const attr = element.attributes[i]
+            openingTag += ` ${attr.name}="${attr.value}"`
+        }
+        
+        // Check if element has content (children or text)
+        const hasChildren = element.children.length > 0
+        const hasText = element.childNodes.length > 0 && element.childNodes[0].nodeType === Node.TEXT_NODE && element.childNodes[0].textContent?.trim()
+        
+        if (hasChildren || hasText) {
+            openingTag += '>'
+            result += spaces + openingTag + '\n'
+            
+            // Process all child nodes (both elements and text)
+            for (let i = 0; i < element.childNodes.length; i++) {
+                const childNode = element.childNodes[i]
+                
+                if (childNode.nodeType === Node.TEXT_NODE) {
+                    // Handle text nodes
+                    const text = childNode.textContent?.trim()
+                    if (text) {
+                        result += '  '.repeat(indent + 1) + text + '\n'
+                    }
+                } else if (childNode.nodeType === Node.ELEMENT_NODE) {
+                    // Handle element nodes
+                    result += formatElement(childNode as Element, indent + 1)
+                }
+            }
+            
+            // Closing tag
+            result += spaces + `</${tagName}>\n`
+        } else {
+            openingTag += ' />'
+            result += spaces + openingTag + '\n'
+        }
+        
+        return result
+    }
+    
+    // Format all top-level elements
+    let formattedHTML = ''
+    for (let i = 0; i < tempDiv.children.length; i++) {
+        formattedHTML += formatElement(tempDiv.children[i])
+    }
+    
+    return formattedHTML.trim()
+}
 
 // Enhanced markdown to HTML converter for TipTap
 function convertMarkdownToHTML(markdown: string): string {
@@ -113,9 +285,9 @@ function convertMarkdownToHTML(markdown: string): string {
         // Links [text](url)
         .replace(/\[([^\]]+?)\]\(([^)]+?)\)/g, '<a href="$2">$1</a>')
     
-    console.log('✅ Final HTML output:', html)
-    return html
-}
+         console.log('✅ Final HTML output:', html)
+     return html
+ }
 
 export default function ReleaseNotesEditorById() {
     const router = useRouter()
@@ -187,10 +359,16 @@ export default function ReleaseNotesEditorById() {
                     console.log('Content type:', typeof editorContent)
                     console.log('Content length:', editorContent.length)
                     
-                    // Set content immediately - TipTap should handle HTML properly
-                    setContent(editorContent)
-                    // Store raw markdown for source view
-                    setRawContent(releaseNoteData.content_markdown || releaseNoteData.content || '')
+                                         // Set content immediately - TipTap should handle HTML properly
+                     setContent(editorContent)
+                     // Store raw markdown for source view - convert HTML back to markdown if needed
+                     if (releaseNoteData.content_html && releaseNoteData.content_html.trim() !== '') {
+                         // If we have HTML content, convert it back to markdown for the source view
+                         setRawContent(convertHTMLToMarkdown(releaseNoteData.content_html))
+                     } else {
+                         // Use existing markdown if available
+                         setRawContent(releaseNoteData.content_markdown || releaseNoteData.content || '')
+                     }
                     setVersion(releaseNoteData.version || '')
                     
                     // Set the public/private state based on the loaded release note
@@ -347,38 +525,66 @@ export default function ReleaseNotesEditorById() {
         setError(null)
         
         try {
-            await handleSave()
-            
-            // Publish with public setting (default to public when using Publish button)
-            const response = await fetch(`/api/release-notes/${releaseNoteId}/publish`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_public: true })
-            })
-            
-            if (response.ok) {
-                const result = await response.json()
-                console.log('Release note published successfully')
-                
-                // Update the local state to reflect the published status
-                setIsPublic(true)
-                if (releaseNote) {
-                    setReleaseNote({
-                        ...releaseNote,
+            // For published release notes, update directly without saving as draft first
+            if (releaseNote?.status === 'published') {
+                const response = await fetch(`/api/release-notes/${releaseNoteId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        version,
+                        content_markdown: rawContent,
+                        content_html: content,
                         status: 'published',
-                        published_at: new Date().toISOString()
+                        is_public: true
                     })
+                })
+                
+                if (response.ok) {
+                    console.log('Release note updated successfully')
+                    
+                    // Show success message
+                    alert('Release note updated successfully! Changes are now live.')
+                    
+                    router.push('/dashboard/releases')
+                } else {
+                    throw new Error('Failed to update release note')
                 }
-                
-                // Show success message
-                alert('Release note published successfully! It is now publicly accessible.')
-                
-                router.push('/dashboard/releases')
             } else {
-                throw new Error('Failed to publish release note')
+                // For draft release notes, save first then publish
+                await handleSave()
+                
+                // Publish with public setting
+                const response = await fetch(`/api/release-notes/${releaseNoteId}/publish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_public: true })
+                })
+                
+                if (response.ok) {
+                    const result = await response.json()
+                    console.log('Release note published successfully')
+                    
+                    // Update the local state to reflect the published status
+                    setIsPublic(true)
+                    if (releaseNote) {
+                        setReleaseNote({
+                            ...releaseNote,
+                            status: 'published',
+                            published_at: new Date().toISOString()
+                        })
+                    }
+                    
+                    // Show success message
+                    alert('Release note published successfully! It is now publicly accessible.')
+                    
+                    router.push('/dashboard/releases')
+                } else {
+                    throw new Error('Failed to publish release note')
+                }
             }
         } catch (error) {
-            console.error('Failed to publish:', error)
+            console.error('Failed to publish/update:', error)
             setError('Failed to publish release note')
         } finally {
             setPublishing(false)
@@ -408,8 +614,12 @@ export default function ReleaseNotesEditorById() {
                         </div>
                         <p className="text-red-600 mb-4">{error}</p>
                         <Link href="/dashboard/releases">
-                            <Button variant="brand-primary">
-                                Back to Releases
+                            <Button 
+                                variant="neutral-tertiary"
+                                icon={<FeatherArrowLeft />}
+                                className="hover:bg-gray-100 transition-colors duration-200 px-2 py-1 text-sm"
+                            >
+                                Back
                             </Button>
                         </Link>
                     </div>
@@ -423,14 +633,15 @@ export default function ReleaseNotesEditorById() {
             <div className="flex h-full w-full flex-col items-start">
                 {/* Header */}
                 <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border px-8 py-6">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                         <Link href="/dashboard/releases">
                             <Button
                                 variant="neutral-tertiary"
                                 icon={<FeatherArrowLeft />}
                                 size="small"
+                                className="hover:bg-gray-100 transition-colors duration-200 px-2 py-1 text-sm"
                             >
-                                Back to Releases
+                                Back
                             </Button>
                         </Link>
                         <div className="flex flex-col items-start gap-1">
@@ -459,49 +670,51 @@ export default function ReleaseNotesEditorById() {
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="neutral-tertiary"
-                            icon={<FeatherEye />}
-                            onClick={() => setShowVisibilitySettings(true)}
-                            size="small"
-                        >
-                            Status
-                        </Button>
-                        <Button
-                            variant="neutral-primary"
-                            icon={<FeatherSave />}
-                            onClick={handleSave}
-                            disabled={saving}
-                            size="medium"
-                        >
-                            {saving ? 'Saving...' : 'Save Draft'}
-                        </Button>
-                        <Button
-                            variant="neutral-secondary"
-                            icon={<FeatherEye />}
-                            onClick={() => setShowPublicPreview(true)}
-                            size="medium"
-                        >
-                            Public Preview
-                        </Button>
-                        <Button
-                            variant="brand-primary"
-                            icon={publishing ? undefined : <FeatherCheck />}
-                            onClick={handlePublish}
-                            disabled={publishing}
-                            size="medium"
-                        >
-                            {publishing ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Publishing...
-                                </>
-                            ) : (
-                                'Publish'
-                            )}
-                        </Button>
-                    </div>
+                                         <div className="flex items-center gap-3">
+                         <Button
+                             variant="neutral-tertiary"
+                             icon={<FeatherEye />}
+                             onClick={() => setShowVisibilitySettings(true)}
+                             size="small"
+                         >
+                             Status
+                         </Button>
+                         {releaseNote?.status !== 'published' && (
+                             <Button
+                                 variant="neutral-primary"
+                                 icon={<FeatherSave />}
+                                 onClick={handleSave}
+                                 disabled={saving}
+                                 size="medium"
+                             >
+                                 {saving ? 'Saving...' : 'Save Draft'}
+                             </Button>
+                         )}
+                         <Button
+                             variant="neutral-secondary"
+                             icon={<FeatherEye />}
+                             onClick={() => setShowPublicPreview(true)}
+                             size="medium"
+                         >
+                             Public Preview
+                         </Button>
+                         <Button
+                             variant="brand-primary"
+                             icon={publishing ? undefined : <FeatherCheck />}
+                             onClick={handlePublish}
+                             disabled={publishing}
+                             size="medium"
+                         >
+                             {publishing ? (
+                                 <>
+                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                     {releaseNote?.status === 'published' ? 'Updating...' : 'Publishing...'}
+                                 </>
+                             ) : (
+                                 releaseNote?.status === 'published' ? 'Update' : 'Publish'
+                             )}
+                         </Button>
+                     </div>
                 </div>
 
                 <div className="flex w-full grow shrink-0 basis-0 flex-col items-start bg-default-background">
@@ -577,21 +790,26 @@ export default function ReleaseNotesEditorById() {
                                     </div>
                                 </div>
                                 
-                                {/* Rich Text Editor */}
-                                {viewMode === 'editor' && (
-                                    <RichTextEditor
-                                        content={content}
-                                        onChange={(newContent) => setContent(newContent)}
-                                        placeholder="Start writing your release notes..."
-                                        enableAI={true}
-                                    />
-                                )}
+                                                                 {/* Rich Text Editor */}
+                                 {viewMode === 'editor' && (
+                                     <RichTextEditor
+                                         content={content}
+                                         onChange={(newContent) => {
+                                             setContent(newContent)
+                                             // Convert HTML back to markdown for source view
+                                             const markdownContent = convertHTMLToMarkdown(newContent)
+                                             setRawContent(markdownContent)
+                                         }}
+                                         placeholder="Start writing your release notes..."
+                                         enableAI={true}
+                                     />
+                                 )}
                                 
                                 {/* Preview Mode */}
                                 {viewMode === 'preview' && (
                                     <div className="border border-neutral-200 rounded-lg p-6 bg-white min-h-[400px]">
                                         <div 
-                                            className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none text-default-font"
+                                            className="tiptap prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none text-default-font"
                                             dangerouslySetInnerHTML={{ __html: content }}
                                         />
                                     </div>
@@ -630,8 +848,8 @@ export default function ReleaseNotesEditorById() {
                                                 <span className="text-sm font-medium text-neutral-700">Generated HTML</span>
                                             </div>
                                                                                          <div className="p-4 bg-neutral-50 max-h-64 overflow-y-auto">
-                                                 <pre className="text-xs text-neutral-600 whitespace-pre-wrap font-mono text-default-font">
-                                                     {content}
+                                                 <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-mono leading-relaxed">
+                                                     {formatHTML(content)}
                                                  </pre>
                                              </div>
                                         </div>

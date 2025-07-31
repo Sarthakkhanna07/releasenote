@@ -184,7 +184,7 @@ export default async function PublicReleaseNotePage({ params }: Props) {
 
           {/* Content Area */}
           <div 
-            className="prose prose-lg dark:prose-invert max-w-none prose-img:rounded-lg prose-a:text-primary-600 hover:prose-a:text-primary-500"
+            className="tiptap prose prose-lg dark:prose-invert max-w-none prose-img:rounded-lg prose-a:text-primary-600 hover:prose-a:text-primary-500"
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
         </div>

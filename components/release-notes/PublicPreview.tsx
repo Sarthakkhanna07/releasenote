@@ -98,7 +98,7 @@ export function PublicPreview({ releaseNote, organization }: PublicPreviewProps)
               <div className="p-6">
                 <h1 className="text-2xl font-bold mb-4 text-default-font">{releaseNote.title}</h1>
                 <div 
-                  className="prose prose-sm max-w-none text-default-font"
+                  className="tiptap prose prose-sm max-w-none text-default-font"
                   dangerouslySetInnerHTML={{ __html: releaseNote.content_html || '' }}
                 />
               </div>
