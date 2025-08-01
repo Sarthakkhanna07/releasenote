@@ -1,0 +1,27 @@
+# Supabase temporary files
+.temp/
+*.tmp
+
+# Local development files
+*.log
+*.pid
+
+# Environment-specific files
+.env.local
+.env.production
+
+# Database dumps (if any)
+*.sql.bak
+*.dump
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup
+*.old
