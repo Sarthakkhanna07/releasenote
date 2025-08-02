@@ -53,17 +53,31 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get('page') || '1')
     console.log('[API] Query params:', { sort, direction, per_page, page });
 
-    // Initialize GitHub service and fetch repositories
+    // Initialize GitHub service and fetch user info and repositories
     const github = new GitHubService(accessToken)
-    const repositories = await github.getRepositories({
-      sort,
-      direction,
-      per_page: Math.min(per_page, 100), // Limit to 100 per page
-      page
-    })
+    
+    // Fetch user information and repositories in parallel
+    const [user, repositories] = await Promise.all([
+      github.getUser(),
+      github.getRepositories({
+        sort,
+        direction,
+        per_page: Math.min(per_page, 100), // Limit to 100 per page
+        page
+      })
+    ])
+    
+    console.log('[API] User info fetched:', user.login);
     console.log('[API] Number of repositories fetched:', repositories.length);
 
     return NextResponse.json({
+      user: {
+        login: user.login,
+        avatar_url: user.avatar_url,
+        public_repos: user.public_repos || 0,
+        total_private_repos: user.total_private_repos || 0,
+        owned_private_repos: user.owned_private_repos || 0
+      },
       repositories,
       pagination: {
         page,

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import Link from 'next/link'
 import { 
   SearchIcon, 
   StarIcon, 
@@ -20,7 +21,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface Repository {
+export interface Repository {
   id: number
   name: string
   full_name: string
@@ -47,7 +48,7 @@ interface Repository {
 
 interface RepositoryManagerProps {
   className?: string
-  onRepositorySelect?: (repository: Repository) => void
+  onRepositorySelect?: ((repository: Repository | Repository[]) => void) | React.Dispatch<React.SetStateAction<Repository[]>>
   selectedRepositories?: Repository[]
   selectionMode?: 'single' | 'multiple'
 }
@@ -171,11 +172,11 @@ export function GitHubRepositoryManager({
     if (isSelected) {
       // Remove from selection
       const updatedSelection = selectedRepositories.filter(repo => repo.id !== repository.id)
-      onRepositorySelect(updatedSelection as any) // Type assertion for flexibility
+      onRepositorySelect(updatedSelection)
     } else {
       // Add to selection
       const updatedSelection = [...selectedRepositories, repository]
-      onRepositorySelect(updatedSelection as any) // Type assertion for flexibility
+      onRepositorySelect(updatedSelection)
     }
   }, [onRepositorySelect, selectedRepositories, selectionMode])
 
@@ -261,14 +262,14 @@ export function GitHubRepositoryManager({
                     className="w-10 h-10 rounded-full"
                   />
                 )}
-                <div>
-                  <CardTitle className="text-lg">
-                    Connected as @{connection.username}
-                  </CardTitle>
-                  <CardDescription>
-                    {connection.public_repos} public • {connection.total_private_repos} private repositories
-                  </CardDescription>
-                </div>
+                                 <div>
+                   <CardTitle className="text-lg text-neutral-900">
+                     Connected as @{connection.username}
+                   </CardTitle>
+                   <CardDescription className="text-neutral-700">
+                     {connection.public_repos} public • {connection.total_private_repos} private repositories
+                   </CardDescription>
+                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Badge className="bg-green-100 text-green-800">
@@ -287,68 +288,68 @@ export function GitHubRepositoryManager({
             </div>
           </CardHeader>
 
-          {connection.rate_limit && (
-            <CardContent className="pt-0">
-              <div className="text-xs text-gray-600">
-                API Rate Limit: {connection.rate_limit.remaining}/{connection.rate_limit.limit} remaining
-                {connection.rate_limit.remaining < 100 && (
-                  <span className="text-orange-600 ml-2">⚠️ Low remaining requests</span>
-                )}
-              </div>
-            </CardContent>
-          )}
+                     {connection.rate_limit && (
+             <CardContent className="pt-0">
+               <div className="text-xs text-neutral-700">
+                 API Rate Limit: {connection.rate_limit.remaining}/{connection.rate_limit.limit} remaining
+                 {connection.rate_limit.remaining < 100 && (
+                   <span className="text-orange-600 ml-2">⚠️ Low remaining requests</span>
+                 )}
+               </div>
+             </CardContent>
+           )}
         </Card>
       )}
 
       {/* Repository Management */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Repository Selection</CardTitle>
-              <CardDescription>
-                Choose repositories to generate release notes from
-                {selectedRepositories.length > 0 && (
-                  <span className="ml-2 text-blue-600">
-                    ({selectedRepositories.length} selected)
-                  </span>
-                )}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
+                 <CardHeader>
+           <div className="flex items-center justify-between">
+             <div>
+               <CardTitle className="text-neutral-900">Repository Selection</CardTitle>
+               <CardDescription className="text-neutral-700">
+                 Choose repositories to generate release notes from
+                 {selectedRepositories.length > 0 && (
+                   <span className="ml-2 text-blue-600">
+                     ({selectedRepositories.length} selected)
+                   </span>
+                 )}
+               </CardDescription>
+             </div>
+           </div>
+         </CardHeader>
 
         <CardContent className="space-y-4">
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search repositories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Tabs value={filterBy} onValueChange={(value) => setFilterBy(value as any)}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-                <TabsTrigger value="owned" className="text-xs">Owned</TabsTrigger>
-                <TabsTrigger value="starred" className="text-xs">Popular</TabsTrigger>
-                <TabsTrigger value="recent" className="text-xs">Recent</TabsTrigger>
-              </TabsList>
-            </Tabs>
+                         <div className="relative flex-1">
+               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-500" />
+               <Input
+                 placeholder="Search repositories..."
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 className="pl-10"
+               />
+             </div>
+                         <Tabs value={filterBy} onValueChange={(value) => setFilterBy(value as any)}>
+               <TabsList className="grid w-full grid-cols-4">
+                 <TabsTrigger value="all" className="text-xs text-neutral-700 hover:text-neutral-900">All</TabsTrigger>
+                 <TabsTrigger value="owned" className="text-xs text-neutral-700 hover:text-neutral-900">Owned</TabsTrigger>
+                 <TabsTrigger value="starred" className="text-xs text-neutral-700 hover:text-neutral-900">Popular</TabsTrigger>
+                 <TabsTrigger value="recent" className="text-xs text-neutral-700 hover:text-neutral-900">Recent</TabsTrigger>
+               </TabsList>
+             </Tabs>
           </div>
 
           {/* Repository List */}
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {filteredRepos.length === 0 ? (
-              <div className="text-center py-8">
-                <BookOpenIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">
-                  {searchQuery ? 'No repositories match your search' : 'No repositories found'}
-                </p>
-              </div>
+                         {filteredRepos.length === 0 ? (
+               <div className="text-center py-8">
+                 <BookOpenIcon className="w-12 h-12 text-neutral-500 mx-auto mb-4" />
+                 <p className="text-neutral-700">
+                   {searchQuery ? 'No repositories match your search' : 'No repositories found'}
+                 </p>
+               </div>
             ) : (
               filteredRepos.map((repo) => (
                 <div
@@ -363,28 +364,28 @@ export function GitHubRepositoryManager({
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-medium text-gray-900 truncate">
-                          {repo.name}
-                        </h4>
-                        {repo.private && (
-                          <Badge variant="outline" className="text-xs">Private</Badge>
-                        )}
-                        {repo.fork && (
-                          <Badge variant="outline" className="text-xs">Fork</Badge>
-                        )}
-                        {repo.archived && (
-                          <Badge variant="outline" className="text-xs text-orange-600">Archived</Badge>
-                        )}
-                      </div>
+                                             <div className="flex items-center gap-2 mb-2">
+                         <h4 className="font-medium text-neutral-900 truncate">
+                           {repo.name}
+                         </h4>
+                         {repo.private && (
+                           <Badge variant="outline" className="text-xs text-neutral-700">Private</Badge>
+                         )}
+                         {repo.fork && (
+                           <Badge variant="outline" className="text-xs text-neutral-700">Fork</Badge>
+                         )}
+                         {repo.archived && (
+                           <Badge variant="outline" className="text-xs text-orange-600">Archived</Badge>
+                         )}
+                       </div>
                       
-                      {repo.description && (
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                          {repo.description}
-                        </p>
-                      )}
+                                             {repo.description && (
+                         <p className="text-sm text-neutral-700 mb-2 line-clamp-2">
+                           {repo.description}
+                         </p>
+                       )}
                       
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                                             <div className="flex items-center gap-4 text-xs text-neutral-600">
                         {repo.language && (
                           <Badge className={cn("text-xs", getLanguageColor(repo.language))}>
                             {repo.language}
@@ -404,20 +405,20 @@ export function GitHubRepositoryManager({
                         </div>
                       </div>
 
-                      {repo.topics.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {repo.topics.slice(0, 3).map((topic) => (
-                            <Badge key={topic} variant="outline" className="text-xs">
-                              {topic}
-                            </Badge>
-                          ))}
-                          {repo.topics.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{repo.topics.length - 3} more
-                            </Badge>
-                          )}
-                        </div>
-                      )}
+                                             {repo.topics.length > 0 && (
+                         <div className="flex flex-wrap gap-1 mt-2">
+                           {repo.topics.slice(0, 3).map((topic) => (
+                             <Badge key={topic} variant="outline" className="text-xs text-neutral-700">
+                               {topic}
+                             </Badge>
+                           ))}
+                           {repo.topics.length > 3 && (
+                             <Badge variant="outline" className="text-xs text-neutral-700">
+                               +{repo.topics.length - 3} more
+                             </Badge>
+                           )}
+                         </div>
+                       )}
                     </div>
                     
                     <div className="flex items-center gap-2 ml-4">
@@ -442,20 +443,22 @@ export function GitHubRepositoryManager({
             )}
           </div>
 
-          {/* Summary */}
-          {selectedRepositories.length > 0 && (
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  {selectedRepositories.length} repository(ies) selected
-                </div>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                  <WandIcon className="w-4 h-4 mr-2" />
-                  Generate Release Notes
-                </Button>
-              </div>
-            </div>
-          )}
+                     {/* Summary */}
+           {selectedRepositories.length > 0 && (
+             <div className="border-t pt-4">
+               <div className="flex items-center justify-between">
+                 <div className="text-sm text-neutral-700">
+                   {selectedRepositories.length} repository(ies) selected
+                 </div>
+                 <Link href="/dashboard/releases/new/ai">
+                   <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                     <WandIcon className="w-4 h-4 mr-2" />
+                     Generate Release Notes
+                   </Button>
+                 </Link>
+               </div>
+             </div>
+           )}
         </CardContent>
       </Card>
     </div>

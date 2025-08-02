@@ -60,7 +60,7 @@ declare global {
     Prism?: {
       highlightElement: (element: HTMLElement) => void
       highlightAll: () => void
-      manual: boolean
+      manual?: boolean
     }
   }
 }

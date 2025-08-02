@@ -355,7 +355,7 @@ function TemplatePage() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <FeatherFileText className="text-caption font-caption text-subtext-color" />
+                          <FeatherFileText className="w-4 h-4 text-neutral-600" />
                           <span className="text-caption font-caption text-subtext-color">
                             {t.example_output ? `${t.example_output.split(" ").length} words` : "No preview"}
                           </span>
@@ -366,7 +366,7 @@ function TemplatePage() {
                             const sectionCount = content.sections?.length || 0;
                             return (
                               <div className="flex items-center gap-2">
-                                <FeatherLayout className="text-caption font-caption text-subtext-color" />
+                                <FeatherLayout className="w-4 h-4 text-neutral-600" />
                                 <span className="text-caption font-caption text-subtext-color">
                                   {sectionCount} section{sectionCount !== 1 ? 's' : ''}
                                 </span>

@@ -15,7 +15,6 @@ import {
 const protectedRoutes = [
   '/releases',
   '/settings',
-  '/integrations',
   '/configuration',
   '/ai-context',
   '/templates'

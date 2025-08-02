@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const scopes = 'repo,user:email,read:user,read:org' // Scopes for repository access
   
   if (!clientId) {
-    return NextResponse.redirect(`${requestUrl.origin}/integrations/new?error=GitHub integration not configured`)
+    return NextResponse.redirect(`${requestUrl.origin}/dashboard/integrations?error=GitHub integration not configured`)
   }
 
   // Build GitHub OAuth URL for integration

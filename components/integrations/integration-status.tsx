@@ -178,8 +178,8 @@ export function IntegrationStatus({
       <Card className={className}>
         <CardContent className="pt-6">
           <div className="flex items-center gap-3">
-            <RefreshCwIcon className="w-5 h-5 animate-spin text-gray-400" />
-            <span className="text-gray-600">Checking integration status...</span>
+            <RefreshCwIcon className="w-5 h-5 animate-spin text-neutral-500" />
+            <span className="text-neutral-700">Checking integration status...</span>
           </div>
         </CardContent>
       </Card>
@@ -195,7 +195,7 @@ export function IntegrationStatus({
               <XCircleIcon className="w-5 h-5 text-red-600" />
               <div>
                 <p className="font-medium text-red-600">Connection Error</p>
-                <p className="text-sm text-gray-600">{error}</p>
+                <p className="text-sm text-neutral-700">{error}</p>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={runDiagnostics} disabled={testing}>
@@ -212,7 +212,7 @@ export function IntegrationStatus({
       <Card className={className}>
         <CardContent className="pt-6">
           <div className="text-center py-4">
-            <p className="text-gray-600">No integration data available</p>
+            <p className="text-neutral-700">No integration data available</p>
           </div>
         </CardContent>
       </Card>
@@ -226,10 +226,10 @@ export function IntegrationStatus({
           <div className="flex items-center gap-3">
             {getStatusIcon(health.status)}
             <div>
-              <CardTitle className="text-lg capitalize">
+              <CardTitle className="text-lg capitalize text-neutral-900">
                 {integrationType} Integration Status
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-neutral-700">
                 Last checked: {formatLastChecked(health.lastChecked)}
               </CardDescription>
             </div>
@@ -255,8 +255,8 @@ export function IntegrationStatus({
           <div className="flex items-center gap-3">
             <WifiIcon className={cn("w-4 h-4", health.details.connection ? "text-green-600" : "text-red-600")} />
             <div>
-              <p className="text-sm font-medium">Connection</p>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm font-medium text-neutral-800">Connection</p>
+              <p className="text-xs text-neutral-700">
                 {health.details.connection ? 'Connected' : 'Disconnected'}
               </p>
             </div>
@@ -265,8 +265,8 @@ export function IntegrationStatus({
           <div className="flex items-center gap-3">
             <ShieldCheckIcon className={cn("w-4 h-4", health.details.authentication ? "text-green-600" : "text-red-600")} />
             <div>
-              <p className="text-sm font-medium">Authentication</p>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm font-medium text-neutral-800">Authentication</p>
+              <p className="text-xs text-neutral-700">
                 {health.details.authentication ? 'Valid' : 'Invalid'}
               </p>
             </div>
@@ -275,8 +275,8 @@ export function IntegrationStatus({
           <div className="flex items-center gap-3">
             <CheckCircleIcon className={cn("w-4 h-4", health.details.permissions ? "text-green-600" : "text-red-600")} />
             <div>
-              <p className="text-sm font-medium">Permissions</p>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm font-medium text-neutral-800">Permissions</p>
+              <p className="text-xs text-neutral-700">
                 {health.details.permissions ? 'Sufficient' : 'Insufficient'}
               </p>
             </div>
@@ -287,8 +287,8 @@ export function IntegrationStatus({
         {health.details.rateLimit && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">API Rate Limit</p>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm font-medium text-neutral-800">API Rate Limit</p>
+              <p className="text-xs text-neutral-700">
                 {health.details.rateLimit.remaining} / {health.details.rateLimit.limit} remaining
               </p>
             </div>
@@ -296,7 +296,7 @@ export function IntegrationStatus({
               value={(health.details.rateLimit.remaining / health.details.rateLimit.limit) * 100}
               className="h-2"
             />
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-neutral-700">
               Resets: {new Date(health.details.rateLimit.resetAt).toLocaleTimeString()}
             </p>
           </div>
@@ -306,7 +306,7 @@ export function IntegrationStatus({
         {health.metrics && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
             <div>
-              <p className="text-sm font-medium">Success Rate</p>
+              <p className="text-sm font-medium text-neutral-800">Success Rate</p>
               <div className="flex items-center gap-2">
                 <p className="text-lg font-bold text-green-600">
                   {health.metrics.successRate.toFixed(1)}%
@@ -316,15 +316,15 @@ export function IntegrationStatus({
             </div>
 
             <div>
-              <p className="text-sm font-medium">Avg Response Time</p>
+              <p className="text-sm font-medium text-neutral-800">Avg Response Time</p>
               <p className="text-lg font-bold text-blue-600">
                 {health.metrics.avgResponseTime}ms
               </p>
             </div>
 
             <div>
-              <p className="text-sm font-medium">Total Requests</p>
-              <p className="text-lg font-bold text-gray-800">
+              <p className="text-sm font-medium text-neutral-800">Total Requests</p>
+              <p className="text-lg font-bold text-neutral-900">
                 {health.metrics.totalRequests.toLocaleString()}
               </p>
             </div>
@@ -334,7 +334,7 @@ export function IntegrationStatus({
         {/* Issues and Recommendations */}
         {health.issues && health.issues.length > 0 && (
           <div className="space-y-3 pt-4 border-t">
-            <h4 className="font-medium text-gray-900">Issues & Recommendations</h4>
+            <h4 className="font-medium text-neutral-900">Issues & Recommendations</h4>
             {health.issues.map((issue, index) => (
               <div 
                 key={index}
@@ -357,9 +357,9 @@ export function IntegrationStatus({
                     {issue.type === 'info' && <InfoIcon className="w-4 h-4" />}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{issue.message}</p>
+                    <p className="text-sm font-medium text-neutral-900">{issue.message}</p>
                     {issue.solution && (
-                      <p className="text-sm text-gray-600 mt-1">{issue.solution}</p>
+                      <p className="text-sm text-neutral-700 mt-1">{issue.solution}</p>
                     )}
                     {issue.docs && (
                       <a 

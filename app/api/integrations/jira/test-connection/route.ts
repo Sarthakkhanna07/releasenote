@@ -31,9 +31,25 @@ export async function POST(request: NextRequest) {
     const tests = []
     let overallSuccess = true
 
+    // Handle both old and new credential structures
+    let accessToken: string | undefined
+    if (integration.encrypted_credentials?.access_token) {
+      accessToken = integration.encrypted_credentials.access_token
+    } else if (integration.access_token) {
+      accessToken = integration.access_token
+    }
+
+    if (!accessToken) {
+      return NextResponse.json({
+        success: false,
+        error: 'No access token found in integration credentials',
+        tests: []
+      }, { status: 400 })
+    }
+
     // Test 1: Basic Authentication & Resources
     try {
-      const connectionTest = await jiraAPI.testConnection(integration.access_token)
+      const connectionTest = await jiraAPI.testConnection(accessToken)
       
       if (connectionTest.success) {
         tests.push({
@@ -73,7 +89,7 @@ export async function POST(request: NextRequest) {
     if (overallSuccess && integration.metadata?.resources?.length > 0) {
       try {
         const firstSite = integration.metadata.resources[0]
-        const projects = await jiraAPI.getProjects(integration.access_token, firstSite.id, {
+        const projects = await jiraAPI.getProjects(accessToken, firstSite.id, {
           maxResults: 10
         })
 
@@ -107,7 +123,7 @@ export async function POST(request: NextRequest) {
         const firstSite = integration.metadata.resources[0]
         
         // Search for recent issues across all projects
-        const recentIssues = await jiraAPI.searchIssues(integration.access_token, firstSite.id, {
+        const recentIssues = await jiraAPI.searchIssues(accessToken, firstSite.id, {
           jql: 'updated >= -7d ORDER BY updated DESC',
           maxResults: 5
         })
@@ -141,7 +157,7 @@ export async function POST(request: NextRequest) {
     if (overallSuccess && integration.metadata?.resources?.length > 0) {
       try {
         const firstSite = integration.metadata.resources[0]
-        const issueTypes = await jiraAPI.getIssueTypes(integration.access_token, firstSite.id)
+        const issueTypes = await jiraAPI.getIssueTypes(accessToken, firstSite.id)
 
         tests.push({
           name: 'Issue Types & Metadata',
@@ -181,16 +197,16 @@ export async function POST(request: NextRequest) {
           
           switch (endpoint.test) {
             case 'projects':
-              await jiraAPI.getProjects(integration.access_token, firstSite.id, { maxResults: 1 })
+              await jiraAPI.getProjects(accessToken, firstSite.id, { maxResults: 1 })
               break
             case 'search':
-              await jiraAPI.searchIssues(integration.access_token, firstSite.id, {
+              await jiraAPI.searchIssues(accessToken, firstSite.id, {
                 jql: 'updated >= -1d',
                 maxResults: 1
               })
               break
             case 'user':
-              await jiraAPI.getCurrentUser(integration.access_token, firstSite.id)
+              await jiraAPI.getCurrentUser(accessToken, firstSite.id)
               break
           }
           

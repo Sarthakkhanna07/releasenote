@@ -183,7 +183,7 @@ export default function AiContextConfig() {
             <div className="flex w-full items-center justify-between">
               <div className="flex flex-col items-start gap-2">
                 <div className="flex items-center gap-3">
-                  <FeatherZap className="text-xl text-brand-600" />
+                  <FeatherZap className="w-6 h-6 text-brand-600" />
                   <span className="text-2xl font-semibold text-brand-600">
                     AI Context Settings
                   </span>

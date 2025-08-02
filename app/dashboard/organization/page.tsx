@@ -137,7 +137,7 @@ export default function OrganizationProfilePage() {
             <div className="flex w-full items-center justify-between">
               <div className="flex flex-col items-start gap-2">
                 <div className="flex items-center gap-3">
-                  <FeatherBuilding className="text-xl text-brand-600" />
+                  <FeatherBuilding className="w-6 h-6 text-brand-600" />
                   <span className="text-2xl font-semibold text-default-font">
                     Organization Profile
                   </span>

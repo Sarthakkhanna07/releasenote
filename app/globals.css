@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Professional Icon Centering System */
+.icon-perfect-center {
+  position: relative;
+}
+
+.icon-perfect-center > div {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-perfect-center svg {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  /* Compensate for Feather icon's internal padding */
+  transform: translate(-0.5px, -0.5px) !important;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

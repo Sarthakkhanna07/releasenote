@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/subframe-ui/components/Button";
-import { FeatherBell, FeatherSettings, FeatherFileText, FeatherArrowRight, FeatherLink, FeatherPlus, FeatherZap, FeatherUsers } from "@subframe/core";
+import { FeatherBell, FeatherSettings, FeatherFileText, FeatherArrowRight, FeatherLink, FeatherPlus, FeatherZap, FeatherUsers, FeatherGithub, FeatherTrello, FeatherLayout, FeatherMessageSquare } from "@subframe/core";
 import { IconButton } from "@/subframe-ui/components/IconButton";
 import { IconWithBackground } from "@/subframe-ui/components/IconWithBackground";
 import Link from "next/link";
@@ -14,25 +14,25 @@ const INTEGRATION_TYPES = [
     type: 'github',
     name: 'GitHub',
     description: 'Automate release notes with issues, PRs, and commits.',
-    icon: <FeatherLink />, // Replace with a GitHub icon if available
+    icon: <FeatherGithub className="w-5 h-5 text-neutral-700" />,
   },
   {
     type: 'jira',
     name: 'Jira',
     description: 'Sync tickets and project management data.',
-    icon: <FeatherLink />, // Replace with a Jira icon if available
+    icon: <FeatherTrello className="w-5 h-5 text-neutral-700" />,
   },
   {
     type: 'linear',
     name: 'Linear',
     description: 'Import issues and development workflow.',
-    icon: <FeatherLink />, // Replace with a Linear icon if available
+    icon: <FeatherLayout className="w-5 h-5 text-neutral-700" />,
   },
   {
     type: 'slack',
     name: 'Slack',
     description: 'Send release notifications to your team.',
-    icon: <FeatherLink />, // Replace with a Slack icon if available
+    icon: <FeatherMessageSquare className="w-5 h-5 text-neutral-700" />,
   },
 ];
 
@@ -64,7 +64,7 @@ export default function DashboardHomePage() {
         // Fetch AI context
         const aiRes = await fetch('/api/ai-context');
         const aiJson = await aiRes.json();
-        setHasAIContext(!!aiJson.aiContext);
+        setHasAIContext(!!aiJson.data?.aiContext?.id);
         // Fetch release notes
         const supabase = createClientComponentClient();
         const { data: notes, error } = await supabase
@@ -153,71 +153,66 @@ export default function DashboardHomePage() {
           </div>
           <div className="flex items-center gap-2">
             <Link href="/dashboard/notifications" title="Notifications">
-              <IconButton icon={<FeatherBell />} aria-label="Notifications" />
+              <IconButton icon={<FeatherBell className="w-5 h-5 text-neutral-700" />} aria-label="Notifications" />
         </Link>
             <Link href="/dashboard/settings" title="Settings">
-              <IconButton icon={<FeatherSettings />} aria-label="Settings" />
+              <IconButton icon={<FeatherSettings className="w-5 h-5 text-neutral-700" />} aria-label="Settings" />
         </Link>
       </div>
         </div>
         <span className="text-base text-neutral-500">Let's get your release notes workflow humming.</span>
-        <div className="flex items-center gap-3 mt-2">
-          <div className="w-48 h-2 bg-neutral-200 rounded-full overflow-hidden">
-            <div className="h-2 bg-brand-600 rounded-full transition-all" style={{ width: `${(completedSteps / totalSteps) * 100}%` }} />
+        {completedSteps < totalSteps && (
+          <div className="flex items-center gap-3 mt-2">
+            <div className="w-48 h-2 bg-neutral-200 rounded-full overflow-hidden">
+              <div className="h-2 bg-brand-600 rounded-full transition-all" style={{ width: `${(completedSteps / totalSteps) * 100}%` }} />
+            </div>
+            <span className="text-xs text-neutral-500">{completedSteps}/{totalSteps} steps complete</span>
           </div>
-          <span className="text-xs text-neutral-500">{completedSteps}/{totalSteps} steps complete</span>
-      </div>
+        )}
         {/* Quick Actions Row */}
         <div className="flex gap-4 mt-4">
           <Link href="/dashboard/releases/start" title="Create Release Note">
-            <Button size="small" variant="brand-primary" icon={<FeatherPlus />} aria-label="Create Release Note" />
+            <Button size="small" variant="brand-primary" icon={<FeatherPlus className="w-4 h-4" />} aria-label="Create Release Note" />
           </Link>
           <Link href="/dashboard/integrations" title="Manage Integrations">
-            <Button size="small" variant="neutral-secondary" icon={<FeatherSettings />} aria-label="Manage Integrations" />
+            <Button size="small" variant="neutral-secondary" icon={<FeatherSettings className="w-4 h-4" />} aria-label="Manage Integrations" />
           </Link>
           <Link href="/dashboard/ai-context" title="Configure AI Context">
-            <Button size="small" variant="neutral-secondary" icon={<FeatherZap />} aria-label="Configure AI Context" />
+            <Button size="small" variant="neutral-secondary" icon={<FeatherZap className="w-4 h-4" />} aria-label="Configure AI Context" />
           </Link>
         </div>
       </div>
-      {/* Get Started Checklist */}
-      <div className="w-full rounded-xl border border-neutral-200 bg-white px-8 py-6 flex flex-col gap-4">
-        <span className="text-lg font-semibold text-default-font mb-1">Get Started</span>
-        {onboardingLoading ? (
-          <span className="text-base text-neutral-400">Loading your onboarding progress...</span>
-        ) : onboardingError ? (
-          <span className="text-base text-red-500">{onboardingError}</span>
-        ) : completedSteps === totalSteps ? (
-          <div className="flex flex-col items-center gap-3 py-6">
-            <span className="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-700 text-3xl">✓</span>
-            <span className="text-xl font-semibold text-green-700">You're all set!</span>
-            <span className="text-base text-neutral-500 text-center">You've completed all onboarding steps. Start publishing your release notes and keep your users in the loop.</span>
-            <Link href="/dashboard/releases/start">
-              <Button variant="brand-primary" size="large" className="mt-2">Create a Release Note</Button>
-          </Link>
+      {/* Get Started Checklist - Only show if not all steps completed */}
+      {completedSteps < totalSteps && (
+        <div className="w-full rounded-xl border border-neutral-200 bg-white px-8 py-6 flex flex-col gap-4">
+          <span className="text-lg font-semibold text-default-font mb-1">Get Started</span>
+          {onboardingLoading ? (
+            <span className="text-base text-neutral-400">Loading your onboarding progress...</span>
+          ) : onboardingError ? (
+            <span className="text-base text-red-500">{onboardingError}</span>
+          ) : (
+            <ol className="flex flex-col gap-3">
+              {checklist.map((item, i) => (
+                <li key={item.label} className="flex items-center gap-3">
+                  <span className={`w-5 h-5 flex items-center justify-center rounded-full border ${item.done ? 'bg-green-100 border-green-400 text-green-700' : 'bg-neutral-100 border-neutral-300 text-neutral-400'}`}>{item.done ? '✓' : i + 1}</span>
+                  <span className={`text-base ${item.done ? 'line-through text-neutral-400' : 'text-default-font'}`}>{item.label}</span>
+                  {/* Contextual next actions */}
+                  {!item.done && item.label === 'Configure AI context' && (
+                    <Link href="/dashboard/ai-context">
+                      <Button size="small" variant="neutral-secondary" className="ml-2">Configure</Button>
+                    </Link>
+                  )}
+                  {!item.done && item.label === 'Create your first release note' && (
+                    <Link href="/dashboard/releases/start">
+                      <Button size="small" variant="neutral-secondary" className="ml-2">Create</Button>
+            </Link>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
-        ) : (
-          <ol className="flex flex-col gap-3">
-            {checklist.map((item, i) => (
-              <li key={item.label} className="flex items-center gap-3">
-                <span className={`w-5 h-5 flex items-center justify-center rounded-full border ${item.done ? 'bg-green-100 border-green-400 text-green-700' : 'bg-neutral-100 border-neutral-300 text-neutral-400'}`}>{item.done ? '✓' : i + 1}</span>
-                <span className={`text-base ${item.done ? 'line-through text-neutral-400' : 'text-default-font'}`}>{item.label}</span>
-                {/* Contextual next actions */}
-                {!item.done && item.label === 'Configure AI context' && (
-                  <Link href="/dashboard/ai-context">
-                    <Button size="small" variant="neutral-secondary" className="ml-2">Configure</Button>
-                  </Link>
-                )}
-                {!item.done && item.label === 'Create your first release note' && (
-                  <Link href="/dashboard/releases/start">
-                    <Button size="small" variant="neutral-secondary" className="ml-2">Create</Button>
-        </Link>
-                )}
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
+      )}
       {/* Integrations Section (existing code) */}
       <div className="flex w-full flex-col items-start gap-3">
         <span className="text-lg font-semibold text-default-font mb-1">
@@ -234,7 +229,11 @@ export default function DashboardHomePage() {
                 return (
                   <div key={meta.type} className="flex flex-col md:flex-row md:items-center justify-between w-full py-3 border-b last:border-b-0 gap-2">
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-100">{meta.icon}</span>
+                      <span className="w-10 h-10 rounded-full bg-neutral-100 icon-perfect-center text-neutral-700">
+                        <div>
+                          {meta.icon}
+                        </div>
+                      </span>
                       <div>
                         <span className="text-base font-medium text-default-font">{meta.name}</span>
                         <span className="block text-xs text-neutral-500">{meta.description}</span>
@@ -254,7 +253,7 @@ export default function DashboardHomePage() {
               })}
               {INTEGRATION_TYPES.every(meta => !integrationsByType[meta.type]) && (
                 <div className="flex flex-col items-center gap-2 py-8">
-          <IconWithBackground size="large" icon={<FeatherLink />} />
+          <IconWithBackground size="large" icon={<FeatherLink className="w-6 h-6 text-neutral-700" />} />
                   <span className="text-base text-neutral-500">No integrations connected yet.</span>
                   <Link href="/dashboard/integrations">
                     <Button className="text-sm px-4 py-2">Connect Integration</Button>

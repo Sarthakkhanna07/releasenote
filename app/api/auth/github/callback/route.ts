@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   if (!code || state !== 'integration') {
     return NextResponse.redirect(
-      `${requestUrl.origin}/integrations/new?error=Invalid GitHub callback`
+      `${requestUrl.origin}/dashboard/integrations?error=Invalid GitHub callback`
     )
   }
 
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
     if (tokenData.error) {
       return NextResponse.redirect(
-        `${requestUrl.origin}/integrations/new?error=${encodeURIComponent(tokenData.error_description || tokenData.error)}`
+        `${requestUrl.origin}/dashboard/integrations?error=${encodeURIComponent(tokenData.error_description || tokenData.error)}`
       )
     }
 
@@ -76,16 +76,16 @@ export async function GET(request: Request) {
 
     if (insertError) {
       return NextResponse.redirect(
-        `${requestUrl.origin}/integrations/new?error=${encodeURIComponent(insertError.message)}`
+        `${requestUrl.origin}/dashboard/integrations?error=${encodeURIComponent(insertError.message)}`
       )
     }
 
     // Redirect back to integrations with success
-    return NextResponse.redirect(`${requestUrl.origin}/integrations/manage?success=GitHub integration added`)
+    return NextResponse.redirect(`${requestUrl.origin}/dashboard/integrations/manage?success=GitHub integration added`)
 
   } catch (error) {
     return NextResponse.redirect(
-      `${requestUrl.origin}/integrations/new?error=${encodeURIComponent('Failed to connect GitHub')}`
+      `${requestUrl.origin}/dashboard/integrations?error=${encodeURIComponent('Failed to connect GitHub')}`
     )
   }
 } 

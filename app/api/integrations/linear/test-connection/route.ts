@@ -31,9 +31,25 @@ export async function POST(request: NextRequest) {
     const tests = []
     let overallSuccess = true
 
+    // Handle both old and new credential structures
+    let accessToken: string | undefined
+    if (integration.encrypted_credentials?.access_token) {
+      accessToken = integration.encrypted_credentials.access_token
+    } else if (integration.access_token) {
+      accessToken = integration.access_token
+    }
+
+    if (!accessToken) {
+      return NextResponse.json({
+        success: false,
+        error: 'No access token found in integration credentials',
+        tests: []
+      }, { status: 400 })
+    }
+
     // Test 1: Basic Authentication & User Info
     try {
-      const connectionTest = await linearAPI.testConnection(integration.access_token)
+      const connectionTest = await linearAPI.testConnection(accessToken)
       
       if (connectionTest.success) {
         tests.push({
@@ -77,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Test 2: Teams Access
     if (overallSuccess) {
       try {
-        const teams = await linearAPI.getTeams(integration.access_token, {
+        const teams = await linearAPI.getTeams(accessToken, {
           first: 10
         })
 
@@ -109,7 +125,7 @@ export async function POST(request: NextRequest) {
     // Test 3: Issues Access
     if (overallSuccess) {
       try {
-        const issues = await linearAPI.getIssues(integration.access_token, {
+        const issues = await linearAPI.getIssues(accessToken, {
           first: 10,
           orderBy: 'updatedAt'
         })
@@ -143,7 +159,7 @@ export async function POST(request: NextRequest) {
     // Test 4: Projects Access
     if (overallSuccess) {
       try {
-        const projects = await linearAPI.getProjects(integration.access_token, {
+        const projects = await linearAPI.getProjects(accessToken, {
           first: 10
         })
 
@@ -185,13 +201,13 @@ export async function POST(request: NextRequest) {
           
           switch (apiTest.method) {
             case 'getViewer':
-              await linearAPI.getViewer(integration.access_token)
+              await linearAPI.getViewer(accessToken)
               break
             case 'getTeams':
-              await linearAPI.getTeams(integration.access_token, { first: 1 })
+              await linearAPI.getTeams(accessToken, { first: 1 })
               break
             case 'getIssues':
-              await linearAPI.getIssues(integration.access_token, { first: 1 })
+              await linearAPI.getIssues(accessToken, { first: 1 })
               break
           }
           

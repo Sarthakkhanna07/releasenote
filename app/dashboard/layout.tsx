@@ -12,7 +12,7 @@ export default function DashboardLayout({
     <div className="flex min-h-screen bg-white">
       <DashboardNavbar collapsed={collapsed} setCollapsed={setCollapsed} />
       <main
-        className={`py-0 px-8 w-full flex flex-col items-start gap-8 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-56'}`}
+        className={`py-0 w-full flex flex-col items-start gap-8 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-56'}`}
         style={{ background: '#fff' }}
       >
         {children}

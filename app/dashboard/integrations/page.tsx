@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/store/use-auth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { DefaultPageLayout } from "@/subframe-ui/layouts/DefaultPageLayout";
 import { TextField } from "@/subframe-ui/components/TextField";
-import { FeatherSearch, FeatherGithub, FeatherTrello, FeatherLayout, FeatherMessageSquare, FeatherExternalLink, FeatherRefreshCw, FeatherSettings, FeatherLogOut, FeatherMoreVertical } from "@subframe/core";
+import { FeatherGithub, FeatherTrello, FeatherLayout, FeatherMessageSquare, FeatherExternalLink, FeatherRefreshCw, FeatherSettings, FeatherLogOut, FeatherMoreVertical } from "@subframe/core";
 import { IconWithBackground } from "@/subframe-ui/components/IconWithBackground";
 import { Badge } from "@/subframe-ui/components/Badge";
 import { DropdownMenu } from "@/subframe-ui/components/DropdownMenu";
@@ -28,10 +28,10 @@ interface Integration {
 }
 
 const integrationIconMap: Record<string, React.ReactNode> = {
-  github: <FeatherGithub />,
-  jira: <FeatherTrello />,
-  linear: <FeatherLayout />,
-  slack: <FeatherMessageSquare />,
+  github: <FeatherGithub className="w-6 h-6" />,
+  jira: <FeatherTrello className="w-6 h-6" />,
+  linear: <FeatherLayout className="w-6 h-6" />,
+  slack: <FeatherMessageSquare className="w-6 h-6" />,
 };
 
 const badgeVariantMap: Record<string, 'success' | 'warning' | 'neutral' | 'brand'> = {
@@ -54,7 +54,6 @@ export default function IntegrationsPage() {
   const [success, setSuccess] = useState('');
   const { user } = useAuthStore();
   const supabase = createClientComponentClient();
-  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -72,34 +71,34 @@ export default function IntegrationsPage() {
         .eq('organization_id', user.id);
       if (error) throw error;
       const integrationTypes = [
-        {
-          type: 'github',
-          name: 'GitHub',
-          description: 'Import issues, pull requests, and commits for automated release notes',
-          icon: <FeatherGithub />,
-          connectUrl: '/api/auth/github',
-        },
-        {
-          type: 'jira',
-          name: 'Jira',
-          description: 'Sync tickets and project management data for comprehensive release tracking',
-          icon: <FeatherTrello />,
-          connectUrl: '/api/auth/jira',
-        },
-        {
-          type: 'linear',
-          name: 'Linear',
-          description: 'Import issues and development workflow for streamlined release management',
-          icon: <FeatherLayout />,
-          connectUrl: '/api/auth/linear',
-        },
-        {
-          type: 'slack',
-          name: 'Slack',
-          description: 'Send release notifications and updates to your team channels',
-          icon: <FeatherMessageSquare />,
-          connectUrl: '/api/auth/slack',
-        },
+                 {
+           type: 'github',
+           name: 'GitHub',
+           description: 'Import issues, pull requests, and commits for automated release notes',
+           icon: <FeatherGithub className="w-6 h-6" />,
+           connectUrl: '/api/auth/github',
+         },
+         {
+           type: 'jira',
+           name: 'Jira',
+           description: 'Sync tickets and project management data for comprehensive release tracking',
+           icon: <FeatherTrello className="w-6 h-6" />,
+           connectUrl: '/api/auth/jira',
+         },
+         {
+           type: 'linear',
+           name: 'Linear',
+           description: 'Import issues and development workflow for streamlined release management',
+           icon: <FeatherLayout className="w-6 h-6" />,
+           connectUrl: '/api/auth/linear',
+         },
+         {
+           type: 'slack',
+           name: 'Slack',
+           description: 'Send release notifications and updates to your team channels',
+           icon: <FeatherMessageSquare className="w-6 h-6" />,
+           connectUrl: '/api/auth/slack',
+         },
       ];
       const integrationsWithStatus = await Promise.all(
         integrationTypes.map(async (integration) => {
@@ -195,183 +194,240 @@ export default function IntegrationsPage() {
     }
   };
 
-  // Filter integrations by search
-  const filteredIntegrations = integrations.filter(integration =>
-    integration.name.toLowerCase().includes(search.toLowerCase())
-  );
+
 
   return (
-    <div className="flex-1 w-full min-h-screen flex flex-col bg-neutral-50">
-      <div className="flex flex-col items-start gap-12 w-full py-12">
-        <div className="flex w-full flex-row items-center justify-between gap-8 px-10 mb-4">
-          <div className="flex flex-col items-start gap-2">
-            <span className="text-heading-1 font-heading-1 text-default-font">
-              Integrations
-            </span>
-            <span className="text-body font-body text-subtext-color">
-              Connect your tools and services to enhance your release notes workflow
-            </span>
+    <DefaultPageLayout>
+      <div className="flex h-full w-full flex-col items-start">
+        {/* Header */}
+        <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border px-8 py-6">
+          <div className="flex flex-col items-start gap-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-brand-50 rounded-lg flex items-center justify-center">
+                <FeatherSettings className="w-5 h-5 text-brand-600" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-default-font">
+                  Integrations
+                </span>
+                <span className="text-base text-subtext-color">
+                  Connect your tools and services to enhance your release notes workflow
+                </span>
+              </div>
+            </div>
           </div>
-          <Link href="/integrations/manage" legacyBehavior>
-            <a title="Advanced Management: Configure repositories, projects, and run diagnostics" aria-label="Advanced Management" className="ml-auto">
-              <Button variant="outline" className="flex items-center gap-2">
-                <FeatherSettings className="w-5 h-5" />
-                <span className="hidden sm:inline">Advanced Management</span>
-              </Button>
-            </a>
+          <Link href="/dashboard/integrations/manage">
+            <Button variant="neutral-secondary" className="flex items-center gap-2">
+              <FeatherSettings className="w-4 h-4" />
+              Advanced Management
+            </Button>
           </Link>
         </div>
-        <TextField
-          className="h-auto w-full flex-none"
-          variant="filled"
-          label=""
-          helpText=""
-          icon={<FeatherSearch />}
-        >
-          <TextField.Input
-            placeholder="Search integrations..."
-            value={search}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
-          />
-        </TextField>
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 w-full">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 w-full">
-            {success}
-          </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-          {loading ? (
-            <div className="flex items-center justify-center w-full min-h-[200px] col-span-2">
-              <FeatherRefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <span className="ml-2">Loading integrations...</span>
-            </div>
-          ) : filteredIntegrations.length === 0 ? (
-            <div className="text-center w-full text-neutral-400 col-span-2">No integrations found.</div>
-          ) : (
-            <>
-              {filteredIntegrations.map((integration) => (
-                <div
-                  key={integration.id}
-                  className="flex flex-col items-start gap-4 bg-white border border-neutral-200 rounded-xl px-8 py-8 min-w-[320px] max-w-sm w-full"
-                >
-                  <div className="flex w-full items-center gap-4 mb-2">
-                    <IconWithBackground size="large" icon={integration.icon} />
-                    <div className="flex grow shrink-0 basis-0 flex-col items-start gap-1">
-                      <span className="text-base font-semibold text-neutral-900">
-                        {integration.name}
-                      </span>
-                      {integration.type === 'slack' && !integration.connected ? (
-                        <span className="bg-blue-100 text-blue-700 rounded-full px-3 py-1 text-xs font-medium">Configuration Required</span>
-                      ) : (
-                        <span className={`rounded-full px-3 py-1 text-xs font-medium ${integration.connected ? 'bg-green-100 text-green-700' : integration.status === 'error' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>{integration.connected ? 'Connected' : badgeTextMap[integration.status || 'pending']}</span>
-                      )}
+
+        <div className="flex w-full grow shrink-0 basis-0 flex-col items-start bg-default-background">
+
+          {/* Error and Success Messages */}
+          {error && (
+            <div className="w-full px-8 py-4">
+              <div className="max-w-4xl mx-auto">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 text-xs font-bold">!</span>
                     </div>
-                    {integration.connected && (
-                      <SubframeCore.DropdownMenu.Root>
-                        <SubframeCore.DropdownMenu.Trigger asChild={true}>
-                          <IconButton
-                            size="small"
-                            icon={<FeatherMoreVertical />}
-                            onClick={() => {}}
-                          />
-                        </SubframeCore.DropdownMenu.Trigger>
-                        <SubframeCore.DropdownMenu.Portal>
-                          <SubframeCore.DropdownMenu.Content
-                            side="bottom"
-                            align="end"
-                            sideOffset={4}
-                            asChild={true}
-                          >
-                            <DropdownMenu>
-                              <DropdownMenu.DropdownItem icon={<FeatherRefreshCw />} onClick={() => handleTest(integration)}>
-                                {testing === integration.id ? 'Testing...' : 'Test Connection'}
-                              </DropdownMenu.DropdownItem>
-                              <DropdownMenu.DropdownItem icon={<FeatherSettings />}>
-                                Configure
-                              </DropdownMenu.DropdownItem>
-                              <DropdownMenu.DropdownDivider />
-                              <DropdownMenu.DropdownItem icon={<FeatherLogOut />} onClick={() => handleDisconnect(integration)}>
-                                Disconnect
-                              </DropdownMenu.DropdownItem>
-                            </DropdownMenu>
-                          </SubframeCore.DropdownMenu.Content>
-                        </SubframeCore.DropdownMenu.Portal>
-                      </SubframeCore.DropdownMenu.Root>
-                    )}
+                    {error}
                   </div>
-                  <span className="text-sm text-neutral-500 mb-2">
-                    {integration.description}
-                  </span>
-                  {integration.connected && (
-                    <div className="flex w-full flex-col items-start gap-2 rounded-md bg-neutral-50 px-4 py-3 mb-2">
-                      {integration.lastSync && (
-                        <div className="flex w-full items-center justify-between">
-                          <span className="text-xs text-neutral-400 font-medium">
-                            Last synced
-                          </span>
-                          <span className="text-xs text-neutral-900 font-medium">
-                            {new Date(integration.lastSync).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                      {integration.type === 'github' && integration.repositories !== undefined && (
-                        <div className="flex w-full items-center justify-between">
-                          <span className="text-xs text-neutral-400 font-medium">
-                            Repositories
-                          </span>
-                          <span className="text-xs text-neutral-900 font-medium">
-                            {integration.repositories}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {integration.connected ? (
-                    integration.type === 'github' && (
-                      <Link href="/releases/new/ai" className="w-full">
-                        <Button className="h-10 w-full flex-none rounded-lg bg-neutral-100 text-neutral-800 font-medium border-none shadow-none" variant="brand-secondary">
-                          Generate Release Notes
-                        </Button>
-                      </Link>
-                    )
-                  ) : (
-                    <Button
-                      className={`h-10 w-full flex-none rounded-lg font-medium ${integration.type === 'slack' ? 'bg-neutral-100 text-neutral-800' : 'bg-black text-white'}`}
-                      variant={integration.type === 'slack' ? 'brand-secondary' : undefined}
-                      onClick={() => handleConnect(integration)}
-                    >
-                      {integration.type === 'slack' ? 'Configure' : 'Connect'}
-                    </Button>
-                  )}
                 </div>
-              ))}
-            </>
+              </div>
+            </div>
           )}
-        </div>
-        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-neutral-200 bg-white px-8 py-8 mt-8">
-          <div className="flex w-full flex-col items-start gap-2">
-            <span className="text-2xl font-bold text-neutral-900">
-              Need help?
-            </span>
-            <span className="text-sm text-neutral-500">
-              Check our documentation for detailed integration guides and troubleshooting tips
-            </span>
+          {success && (
+            <div className="w-full px-8 py-4">
+              <div className="max-w-4xl mx-auto">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-xs font-bold">✓</span>
+                    </div>
+                    {success}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content */}
+          <div className="w-full px-8 py-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                {loading ? (
+                  <div className="flex items-center justify-center w-full min-h-[400px] col-span-2">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mx-auto mb-6">
+                        <div className="relative">
+                          <div className="w-8 h-8 border-2 border-neutral-200 border-t-brand-600 rounded-full animate-spin"></div>
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-semibold text-neutral-900 mb-2">Loading Integrations</h3>
+                      <p className="text-neutral-600 max-w-sm mx-auto">We're fetching your connected services and checking their status...</p>
+                    </div>
+                  </div>
+                ) : integrations.length === 0 ? (
+                  <div className="text-center w-full col-span-2 py-12">
+                    <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FeatherSettings className="w-8 h-8 text-neutral-400" />
+                    </div>
+                    <p className="text-neutral-500 font-medium">No integrations available</p>
+                    <p className="text-sm text-neutral-400 mt-1">Connect your first integration to get started</p>
+                  </div>
+                ) : (
+                  <>
+                    {integrations.map((integration) => (
+                      <div
+                        key={integration.id}
+                        className="flex flex-col items-start gap-6 bg-white border border-neutral-200 rounded-xl p-6 hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex w-full items-center justify-between">
+                          <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-neutral-100 rounded-lg icon-perfect-center text-neutral-700">
+                                <div>
+                                  {integration.icon}
+                                </div>
+                              </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-lg font-semibold text-neutral-900">
+                                {integration.name}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {integration.type === 'slack' && !integration.connected ? (
+                                  <Badge variant="brand">Configuration Required</Badge>
+                                ) : (
+                                    <Badge variant={integration.connected ? 'success' : integration.status === 'error' ? 'error' : 'neutral'}>
+                                    {integration.connected ? 'Connected' : badgeTextMap[integration.status || 'pending']}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {integration.connected && (
+                            <SubframeCore.DropdownMenu.Root>
+                              <SubframeCore.DropdownMenu.Trigger asChild={true}>
+                                <IconButton
+                                  size="small"
+                                  icon={<FeatherMoreVertical />}
+                                  onClick={() => {}}
+                                />
+                              </SubframeCore.DropdownMenu.Trigger>
+                              <SubframeCore.DropdownMenu.Portal>
+                                <SubframeCore.DropdownMenu.Content
+                                  side="bottom"
+                                  align="end"
+                                  sideOffset={4}
+                                  asChild={true}
+                                >
+                                  <DropdownMenu>
+                                    <DropdownMenu.DropdownItem icon={<FeatherRefreshCw />} onClick={() => handleTest(integration)}>
+                                      {testing === integration.id ? 'Testing...' : 'Test Connection'}
+                                    </DropdownMenu.DropdownItem>
+                                    <DropdownMenu.DropdownItem icon={<FeatherSettings />}>
+                                      Configure
+                                    </DropdownMenu.DropdownItem>
+                                    <DropdownMenu.DropdownDivider />
+                                    <DropdownMenu.DropdownItem icon={<FeatherLogOut />} onClick={() => handleDisconnect(integration)}>
+                                      Disconnect
+                                    </DropdownMenu.DropdownItem>
+                                  </DropdownMenu>
+                                </SubframeCore.DropdownMenu.Content>
+                              </SubframeCore.DropdownMenu.Portal>
+                            </SubframeCore.DropdownMenu.Root>
+                          )}
+                        </div>
+
+                        <p className="text-sm text-neutral-600 leading-relaxed">
+                          {integration.description}
+                        </p>
+
+                        {integration.connected && (
+                          <div className="w-full bg-neutral-50 rounded-lg p-4 space-y-3">
+                            {integration.lastSync && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-neutral-600">
+                                  Last synced
+                                </span>
+                                <span className="text-sm text-neutral-900">
+                                  {new Date(integration.lastSync).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
+                            {integration.type === 'github' && integration.repositories !== undefined && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-neutral-600">
+                                  Repositories
+                                </span>
+                                <span className="text-sm text-neutral-900">
+                                  {integration.repositories}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="w-full flex gap-2">
+                          {integration.connected ? (
+                            integration.type === 'github' && (
+                              <Link href="/dashboard/releases/new/ai" className="flex-1">
+                                <Button variant="brand-primary" className="w-full">
+                                  Generate Release Notes
+                                </Button>
+                              </Link>
+                            )
+                          ) : (
+                            <Button
+                              variant={integration.type === 'slack' ? 'neutral-secondary' : 'brand-primary'}
+                              onClick={() => handleConnect(integration)}
+                              className="w-full"
+                            >
+                              {integration.type === 'slack' ? 'Configure' : 'Connect'}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-          <Button
-            variant="neutral-secondary"
-            icon={<FeatherExternalLink />}
-            onClick={() => window.open('https://docs.releasenote.ai', '_blank')}
-            className="h-10 rounded-lg font-medium bg-neutral-100 text-neutral-800"
-          >
-            View Documentation
-          </Button>
+
+          {/* Help Section */}
+          <div className="w-full px-8 py-8 border-t border-solid border-neutral-border">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex flex-col items-start gap-6 rounded-xl border border-neutral-200 bg-white p-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <FeatherExternalLink className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xl font-bold text-neutral-900">
+                      Need help?
+                    </span>
+                    <span className="text-sm text-neutral-600">
+                      Check our documentation for detailed integration guides and troubleshooting tips
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  variant="neutral-secondary"
+                  icon={<FeatherExternalLink />}
+                  onClick={() => window.open('https://docs.releasenote.ai', '_blank')}
+                >
+                  View Documentation
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </DefaultPageLayout>
   );
 } 

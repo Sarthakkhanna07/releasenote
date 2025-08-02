@@ -13,11 +13,11 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Linear OAuth error:', error)
-      return NextResponse.redirect(new URL('/integrations?error=oauth_denied', request.url))
+      return NextResponse.redirect(new URL('/dashboard/integrations?error=oauth_denied', request.url))
     }
 
     if (!code || !state) {
-      return NextResponse.redirect(new URL('/integrations?error=invalid_callback', request.url))
+      return NextResponse.redirect(new URL('/dashboard/integrations?error=invalid_callback', request.url))
     }
 
     // Validate state
@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (stateError || !stateRecord) {
-      return NextResponse.redirect(new URL('/integrations?error=invalid_state', request.url))
+      return NextResponse.redirect(new URL('/dashboard/integrations?error=invalid_state', request.url))
     }
 
     // Check if state is expired
     if (new Date(stateRecord.expires_at) < new Date()) {
-      return NextResponse.redirect(new URL('/integrations?error=expired_state', request.url))
+      return NextResponse.redirect(new URL('/dashboard/integrations?error=expired_state', request.url))
     }
 
     // Get current session
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text()
       console.error('Linear token exchange failed:', errorData)
-      return NextResponse.redirect(new URL('/integrations?error=token_exchange_failed', request.url))
+      return NextResponse.redirect(new URL('/dashboard/integrations?error=token_exchange_failed', request.url))
     }
 
     const tokenData = await tokenResponse.json()
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 
     if (integrationError) {
       console.error('Failed to save Linear integration:', integrationError)
-      return NextResponse.redirect(new URL('/integrations?error=save_failed', request.url))
+      return NextResponse.redirect(new URL('/dashboard/integrations?error=save_failed', request.url))
     }
 
     // Clean up used state
@@ -140,10 +140,10 @@ export async function GET(request: NextRequest) {
       .delete()
       .eq('state', state)
 
-    return NextResponse.redirect(new URL('/integrations?success=linear_connected', request.url))
+    return NextResponse.redirect(new URL('/dashboard/integrations?success=linear_connected', request.url))
 
   } catch (error) {
     console.error('Linear OAuth callback error:', error)
-    return NextResponse.redirect(new URL('/integrations?error=callback_failed', request.url))
+    return NextResponse.redirect(new URL('/dashboard/integrations?error=callback_failed', request.url))
   }
 }

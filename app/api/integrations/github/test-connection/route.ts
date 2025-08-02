@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     // Get GitHub integration
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('encrypted_credentials')
+      .select('*')
       .eq('organization_id', session.user.id)
       .eq('type', 'github')
       .single()
@@ -29,7 +29,22 @@ export async function POST(request: NextRequest) {
 
     const tests = []
     let overallSuccess = true
-    const accessToken = integration.encrypted_credentials?.access_token
+    
+    // Handle both old and new credential structures
+    let accessToken: string | undefined
+    if (integration.encrypted_credentials?.access_token) {
+      accessToken = integration.encrypted_credentials.access_token
+    } else if (integration.access_token) {
+      accessToken = integration.access_token
+    }
+
+    if (!accessToken) {
+      return NextResponse.json({
+        success: false,
+        error: 'No access token found in integration credentials',
+        tests: []
+      }, { status: 400 })
+    }
 
     // Test 1: Basic Authentication
     try {
