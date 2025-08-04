@@ -10,7 +10,6 @@ import {
   PencilIcon,
   EyeIcon,
   UserGroupIcon,
-  ArrowLeftOnRectangleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   BuildingOfficeIcon
@@ -35,6 +34,7 @@ interface DashboardNavbarProps {
 export default function DashboardNavbar({ collapsed, setCollapsed }: DashboardNavbarProps) {
   const pathname = usePathname();
   const user = useAuthStore(state => state.user);
+  const profile = useAuthStore(state => state.profile);
 
   return (
     <div className={`hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex flex-col bg-white border-r border-neutral-200 transition-all duration-300 ${collapsed ? 'lg:w-20' : 'lg:w-56'}`}
@@ -102,7 +102,7 @@ export default function DashboardNavbar({ collapsed, setCollapsed }: DashboardNa
         </nav>
         <div className={`border-t border-neutral-100 mt-8 pt-4 px-2 flex items-center gap-3 transition-all duration-300 ${collapsed ? 'justify-center px-0' : 'px-6'}`}>
           <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-500 font-semibold text-base">
-            {((user?.user_metadata?.full_name || user?.email || 'U').split(' ').map((n: string) => n[0]).join('')).toUpperCase()}
+            {((profile?.first_name && profile?.last_name ? `${profile.first_name} ${profile.last_name}` : user?.email || 'U').split(' ').map((n: string) => n[0]).join('')).toUpperCase()}
           </div>
           {!collapsed && (
             <span
@@ -114,7 +114,7 @@ export default function DashboardNavbar({ collapsed, setCollapsed }: DashboardNa
                 display: 'inline-block',
               }}
             >
-              {user?.user_metadata?.full_name || user?.email || 'User'}
+              {profile?.first_name && profile?.last_name ? `${profile.first_name} ${profile.last_name}` : user?.email || 'User'}
             </span>
           )}
         </div>

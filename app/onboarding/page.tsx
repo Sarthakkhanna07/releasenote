@@ -1,29 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, Building2, User, ArrowRight } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 import Image from 'next/image'
+import { useAuthStore } from '@/lib/store'
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [_userName, setUserName] = useState('')
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
     organizationName: '',
     organizationSlug: ''
   })
   
   const router = useRouter()
   const supabase = createClientComponentClient()
+  const fetchOrganization = useAuthStore(state => state.fetchOrganization)
+
+  useEffect(() => {
+    const getUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const firstName = user.user_metadata?.first_name || ''
+        const lastName = user.user_metadata?.last_name || ''
+        setUserName(`${firstName} ${lastName}`.trim() || user.email || '')
+      }
+    }
+    getUserData()
+  }, [supabase.auth])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -36,8 +48,8 @@ export default function OnboardingPage() {
   }
 
   const handleComplete = async () => {
-    if (!formData.organizationName.trim() || !formData.firstName.trim()) {
-      setError('Please fill in all required fields')
+    if (!formData.organizationName.trim()) {
+      setError('Please enter your organization name')
       return
     }
 
@@ -52,14 +64,11 @@ export default function OnboardingPage() {
       }
 
       // Create organization
-      const { data: orgData, error: orgError } = await supabase
+      const { data: _orgData, error: orgError } = await supabase
         .from('organizations')
         .insert({
-          id: user.user.id,
           name: formData.organizationName.trim(),
-          slug: formData.organizationSlug || slugify(formData.organizationName),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          slug: formData.organizationSlug || slugify(formData.organizationName)
         })
         .select()
         .single()
@@ -77,10 +86,9 @@ export default function OnboardingPage() {
       const { error: memberError } = await supabase
         .from('organization_members')
         .insert({
-          organization_id: user.user.id,
+          organization_id: _orgData.id,
           user_id: user.user.id,
-          role: 'owner',
-          created_at: new Date().toISOString()
+          role: 'owner'
         })
 
       if (memberError) {
@@ -88,16 +96,8 @@ export default function OnboardingPage() {
         // Don't fail onboarding for this, as the user is still the owner
       }
 
-      // Update user metadata if needed
-      if (formData.firstName || formData.lastName) {
-        await supabase.auth.updateUser({
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            full_name: `${formData.firstName} ${formData.lastName}`.trim()
-          }
-        })
-      }
+      // Refresh organization data in auth store
+      await fetchOrganization(user.user.id)
 
       // Redirect to dashboard
       router.push('/dashboard?welcome=true')
@@ -129,27 +129,22 @@ export default function OnboardingPage() {
             Welcome to Release Notes AI
           </h2>
           <p className="mt-2 text-base text-neutral-500">
-            Let’s get your organization set up in just a few steps. You’ll be publishing beautiful release notes in minutes!
+            Let&apos;s get your organization set up in just a few steps. You&apos;ll be publishing beautiful release notes in minutes!
           </p>
         </div>
 
         {/* Progress */}
-        <div className="flex items-center justify-center space-x-4">
-          <div className={`flex items-center ${step >= 1 ? 'text-brand-600' : 'text-neutral-400'}`}> 
-            {step > 1 ? <CheckCircle className="w-5 h-5" /> : <User className="w-5 h-5" />}
-            <span className="ml-2 text-base font-medium">Profile</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-neutral-400" />
-          <div className={`flex items-center ${step >= 2 ? 'text-brand-600' : 'text-neutral-400'}`}> 
+        <div className="flex items-center justify-center">
+          <div className="flex items-center text-brand-600"> 
             <Building2 className="w-5 h-5" />
-            <span className="ml-2 text-base font-medium">Organization</span>
+            <span className="ml-2 text-base font-medium">Organization Setup</span>
           </div>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-center text-xl font-semibold text-default-font">
-              {step === 1 ? 'Tell us about yourself' : 'Create your organization'}
+              Create your organization
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -159,87 +154,45 @@ export default function OnboardingPage() {
               </Alert>
             )}
 
-            {step === 1 ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-base font-medium text-default-font mb-1">
-                    First Name *
-                  </label>
-                  <Input
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    placeholder="Enter your first name"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-base font-medium text-default-font mb-1">
-                    Last Name
-                  </label>
-                  <Input
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    placeholder="Enter your last name"
-                  />
-                </div>
-                <Button 
-                  onClick={() => setStep(2)} 
-                  className="w-full"
-                  disabled={!formData.firstName.trim()}
-                >
-                  Continue
-                </Button>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-base font-medium text-default-font mb-1">
+                  Organization Name *
+                </label>
+                <Input
+                  value={formData.organizationName}
+                  onChange={(e) => handleInputChange('organizationName', e.target.value)}
+                  placeholder="Enter your organization name"
+                  required
+                />
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-base font-medium text-default-font mb-1">
-                    Organization Name *
-                  </label>
+              <div>
+                <label className="block text-base font-medium text-default-font mb-1">
+                  Organization URL
+                </label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-neutral-200 bg-neutral-100 text-neutral-500 text-base">
+                    yourapp.com/notes/
+                  </span>
                   <Input
-                    value={formData.organizationName}
-                    onChange={(e) => handleInputChange('organizationName', e.target.value)}
-                    placeholder="Enter your organization name"
-                    required
+                    value={formData.organizationSlug}
+                    onChange={(e) => handleInputChange('organizationSlug', e.target.value)}
+                    placeholder="your-org"
+                    className="rounded-l-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-base font-medium text-default-font mb-1">
-                    Organization URL
-                  </label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-neutral-200 bg-neutral-100 text-neutral-500 text-base">
-                      yourapp.com/notes/
-                    </span>
-                    <Input
-                      value={formData.organizationSlug}
-                      onChange={(e) => handleInputChange('organizationSlug', e.target.value)}
-                      placeholder="your-org"
-                      className="rounded-l-none"
-                    />
-                  </div>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    This will be your public release notes URL
-                  </p>
-                </div>
-                <div className="flex space-x-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setStep(1)}
-                    className="flex-1"
-                  >
-                    Back
-                  </Button>
-                  <Button 
-                    onClick={handleComplete}
-                    disabled={loading || !formData.organizationName.trim()}
-                    className="flex-1"
-                  >
-                    {loading ? 'Creating...' : 'Complete Setup'}
-                  </Button>
-                </div>
+                <p className="text-xs text-neutral-500 mt-1">
+                  This will be your public release notes URL
+                </p>
               </div>
-            )}
+              <Button 
+                onClick={handleComplete}
+                disabled={loading || !formData.organizationName.trim()}
+                className="w-full"
+              >
+                {loading ? 'Creating...' : 'Complete Setup'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

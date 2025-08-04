@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -9,14 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuthActions } from '@/lib/store'
-import { MailIcon, AlertTriangleIcon } from 'lucide-react'
+import { MailIcon } from 'lucide-react'
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
-    organizationName: ''
+    email: ''
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -39,16 +38,16 @@ export default function SignupPage() {
     try {
       const { error } = await signUp(formData.email, {
         firstName: formData.firstName,
-        lastName: formData.lastName,
-        organizationName: formData.organizationName
+        lastName: formData.lastName
       })
       if (error) {
         setError(error.message || 'Failed to send magic link')
       } else {
         setSuccess(true)
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to send magic link')
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send magic link'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -103,7 +102,7 @@ export default function SignupPage() {
                 </div>
                 <div>
                   <p className="text-base text-green-700 mb-2">
-                    We've sent a magic link to <strong>{formData.email}</strong>
+                    We&apos;ve sent a magic link to <strong>{formData.email}</strong>
                   </p>
                   <p className="text-sm text-neutral-500">
                     Click the link in your email to complete your registration. It may take a few minutes to arrive.
@@ -172,24 +171,9 @@ export default function SignupPage() {
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="organizationName" className="block text-base font-medium text-default-font mb-1">
-                    Organization name
-                  </label>
-                  <Input
-                    id="organizationName"
-                    name="organizationName"
-                    type="text"
-                    required
-                    value={formData.organizationName}
-                    onChange={handleChange}
-                    placeholder="Acme Inc."
-                  />
-                </div>
-
                 <div className="text-center">
                   <p className="text-base text-neutral-500 mb-4">
-                    We'll send you a magic link to complete your registration - no password needed!
+                    We&apos;ll send you a magic link to complete your registration - no password needed!
                   </p>
                 </div>
 

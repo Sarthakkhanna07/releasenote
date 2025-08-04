@@ -39,7 +39,7 @@ interface AuthState {
   
   // Auth methods
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>
-  signUp: (email: string, userData?: { firstName?: string; lastName?: string; organizationName?: string }) => Promise<{ error: Error | null }>
+  signUp: (email: string, userData?: { firstName?: string; lastName?: string }) => Promise<{ error: Error | null }>
   fetchProfile: (userId: string) => Promise<void>
   fetchOrganization: (userId: string) => Promise<void>
   
@@ -134,7 +134,7 @@ export const useAuthStore = create<AuthState>()(
           }
         },
         
-        signUp: async (email: string, userData?: { firstName?: string; lastName?: string; organizationName?: string }) => {
+        signUp: async (email: string, userData?: { firstName?: string; lastName?: string }) => {
           try {
             set({ isLoading: true, error: null }, false, 'signUpStart')
             const supabase = createClientComponentClient()
@@ -146,8 +146,7 @@ export const useAuthStore = create<AuthState>()(
                 emailRedirectTo: `${window.location.origin}/auth/callback`,
                 data: {
                   first_name: userData?.firstName,
-                  last_name: userData?.lastName,
-                  organization_name: userData?.organizationName
+                  last_name: userData?.lastName
                 }
               }
             })
@@ -161,20 +160,29 @@ export const useAuthStore = create<AuthState>()(
           }
         },
         
-        fetchProfile: async (userId: string) => {
+        fetchProfile: async (_userId: string) => {
           try {
             const supabase = createClientComponentClient()
-            const { data, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', userId)
-              .single()
+            const { data: { user }, error } = await supabase.auth.getUser()
             
-            if (error && error.code !== 'PGRST116') {
+            if (error) {
               throw error
             }
             
-            set({ profile: data }, false, 'fetchProfile')
+            if (user) {
+              // Create profile from user metadata
+              const profile = {
+                id: user.id,
+                plan: 'free' as const,
+                first_name: user.user_metadata?.first_name || '',
+                last_name: user.user_metadata?.last_name || '',
+                avatar_url: user.user_metadata?.avatar_url || '',
+                created_at: user.created_at,
+                updated_at: user.updated_at || user.created_at
+              }
+              
+              set({ profile }, false, 'fetchProfile')
+            }
           } catch (error) {
             console.error('Error fetching profile:', error)
             set({ profile: null }, false, 'fetchProfileError')
@@ -184,6 +192,18 @@ export const useAuthStore = create<AuthState>()(
         fetchOrganization: async (userId: string) => {
           try {
             const supabase = createClientComponentClient()
+            
+            // Check cache first (browser-safe)
+            const cacheKey = `auth:organization:${userId}`
+            const cached = await import('@/lib/browser-cache').then(m => m.getBrowserCache(cacheKey))
+            
+            if (cached) {
+              set({
+                organization: cached.organization,
+                membership: cached.membership
+              }, false, 'fetchOrganizationFromCache')
+              return
+            }
             
             // First get the membership
             const { data: membershipData, error: membershipError } = await supabase
@@ -200,6 +220,12 @@ export const useAuthStore = create<AuthState>()(
             }
             
             if (membershipData) {
+              // Cache the result for 5 minutes (browser-safe)
+              await import('@/lib/browser-cache').then(m => m.setBrowserCache(cacheKey, {
+                organization: membershipData.organization,
+                membership: membershipData
+              }, 300))
+              
               set({
                 organization: membershipData.organization,
                 membership: membershipData

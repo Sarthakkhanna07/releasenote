@@ -88,6 +88,12 @@ class CacheManager {
   }
 
   private async initializeRedis() {
+    // Only initialize Redis on the server side
+    if (typeof window !== 'undefined') {
+      console.log('Redis not available in browser, using memory cache only')
+      return
+    }
+
     try {
       const redisUrl = process.env.REDIS_URL
       if (!redisUrl) {
@@ -122,8 +128,8 @@ class CacheManager {
         return memoryResult
       }
 
-      // L2: Redis cache (if available)
-      if (this.redisClient) {
+      // L2: Redis cache (if available and on server)
+      if (this.redisClient && typeof window === 'undefined') {
         const redisResult = await this.redisClient.get(key)
         if (redisResult) {
           const parsed = JSON.parse(redisResult)
@@ -145,8 +151,8 @@ class CacheManager {
       // Store in memory cache
       this.memoryCache.set(key, value, Math.min(ttlSeconds, 300)) // Max 5 minutes in memory
 
-      // Store in Redis if available
-      if (this.redisClient) {
+      // Store in Redis if available and on server
+      if (this.redisClient && typeof window === 'undefined') {
         await this.redisClient.setex(key, ttlSeconds, JSON.stringify(value))
       }
     } catch (error) {
@@ -158,7 +164,7 @@ class CacheManager {
     try {
       this.memoryCache.delete(key)
       
-      if (this.redisClient) {
+      if (this.redisClient && typeof window === 'undefined') {
         await this.redisClient.del(key)
       }
     } catch (error) {
@@ -168,7 +174,7 @@ class CacheManager {
 
   async invalidatePattern(pattern: string): Promise<void> {
     try {
-      if (this.redisClient) {
+      if (this.redisClient && typeof window === 'undefined') {
         const keys = await this.redisClient.keys(pattern)
         if (keys.length > 0) {
           await this.redisClient.del(...keys)
@@ -244,7 +250,7 @@ export function cleanupExpiredCache(): void {
   cacheManager.cleanup()
 }
 
-// Auto-cleanup interval (run every 10 minutes)
+// Auto-cleanup interval (run every 10 minutes, server-side only)
 if (typeof window === 'undefined') {
   setInterval(cleanupExpiredCache, 10 * 60 * 1000)
 }
@@ -264,6 +270,49 @@ export async function deleteCache(key: string) {
 
 export async function invalidateCache(pattern: string) {
   return cacheManager.invalidatePattern(pattern)
+}
+
+// Dashboard cache utilities
+export async function invalidateDashboardCache(organizationId: string) {
+  const patterns = [
+    `dashboard:ai_context:${organizationId}`,
+    `dashboard:release_notes:${organizationId}`,
+    `dashboard:integrations:${organizationId}`,
+    `dashboard:recent_note:${organizationId}`,
+  ]
+  
+  for (const pattern of patterns) {
+    await deleteCache(pattern)
+  }
+}
+
+export async function invalidateAuthCache(userId: string) {
+  const patterns = [
+    `auth:organization:${userId}`,
+    `auth:profile:${userId}`,
+  ]
+  
+  for (const pattern of patterns) {
+    await deleteCache(pattern)
+  }
+}
+
+// Cache key generators for different data types
+export const cacheKeys = {
+  dashboard: {
+    aiContext: (orgId: string) => `dashboard:ai_context:${orgId}`,
+    releaseNotes: (orgId: string) => `dashboard:release_notes:${orgId}`,
+    integrations: (orgId: string) => `dashboard:integrations:${orgId}`,
+    recentNote: (orgId: string) => `dashboard:recent_note:${orgId}`,
+  },
+  auth: {
+    organization: (userId: string) => `auth:organization:${userId}`,
+    profile: (userId: string) => `auth:profile:${userId}`,
+  },
+  releaseNotes: {
+    single: (orgSlug: string, releaseSlug: string) => `release_note:${orgSlug}:${releaseSlug}`,
+    list: (orgId: string) => `release_notes:list:${orgId}`,
+  }
 }
 
 export { cacheManager } 

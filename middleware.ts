@@ -13,6 +13,7 @@ import {
 
 // Protected routes that require authentication
 const protectedRoutes = [
+  '/dashboard',
   '/releases',
   '/settings',
   '/configuration',
