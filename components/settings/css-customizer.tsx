@@ -225,6 +225,41 @@ export function CSSCustomizer({ organizationId }: CSSCustomizerProps) {
     }
   }
 
+  useEffect(() => {
+    const iframe = document.getElementById('css-preview-iframe') as HTMLIFrameElement;
+    if (iframe) {
+      const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+      if (iframeDocument) {
+        iframeDocument.body.innerHTML = `
+          <style>${cssData.customCSS}</style>
+          <div class="release-notes-container">
+            <h1 class="text-2xl font-bold mb-4" style={{ color: 'var(--brand-color)' }}>
+              Release Notes Preview
+            </h1>
+            <div class="release-note-card border rounded-lg p-4 mb-4">
+              <h2 class="release-note-title text-lg font-semibold mb-2">
+                Version 2.1.0 - New Features
+              </h2>
+              <div class="release-note-meta text-sm text-gray-600 mb-3">
+                Published on March 15, 2024
+              </div>
+              <div class="release-note-content">
+                <p class="mb-3">
+                  This release includes several new features and improvements to enhance your experience.
+                </p>
+                <ul class="list-disc list-inside space-y-1">
+                  <li>Enhanced user interface with better navigation</li>
+                  <li>Improved performance and loading times</li>
+                  <li>New customization options for themes</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+  }, [cssData.customCSS]);
+
   return (
     <div className="space-y-6">
       {error && (
@@ -341,7 +376,7 @@ export function CSSCustomizer({ organizationId }: CSSCustomizerProps) {
               <div className="flex justify-end">
                 <Button onClick={handleSave} disabled={saving || loading}>
                   <SaveIcon className="w-4 h-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save CSS'}
+                  {saving ? 'Saving...' : 'Save CSS' : 'Save CSS'}
                 </Button>
               </div>
             </TabsContent>
@@ -422,37 +457,10 @@ export function CSSCustomizer({ organizationId }: CSSCustomizerProps) {
                 </AlertDescription>
               </Alert>
 
-              <div className="border rounded-lg p-6 bg-white" style={{
-                '--brand-color': cssData.brandColor,
-                '--brand-color-hover': `${cssData.brandColor}dd`,
-              } as React.CSSProperties}>
-                <style dangerouslySetInnerHTML={{ __html: cssData.customCSS }} />
-                
-                <div className="release-notes-container">
-                  <h1 className="text-2xl font-bold mb-4" style={{ color: 'var(--brand-color)' }}>
-                    Release Notes Preview
-                  </h1>
-                  
-                  <div className="release-note-card border rounded-lg p-4 mb-4">
-                    <h2 className="release-note-title text-lg font-semibold mb-2">
-                      Version 2.1.0 - New Features
-                    </h2>
-                    <div className="release-note-meta text-sm text-gray-600 mb-3">
-                      Published on March 15, 2024
-                    </div>
-                    <div className="release-note-content">
-                      <p className="mb-3">
-                        This release includes several new features and improvements to enhance your experience.
-                      </p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Enhanced user interface with better navigation</li>
-                        <li>Improved performance and loading times</li>
-                        <li>New customization options for themes</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <iframe
+                id="css-preview-iframe"
+                style={{ width: '100%', height: '500px', border: '1px solid #ccc' }}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>

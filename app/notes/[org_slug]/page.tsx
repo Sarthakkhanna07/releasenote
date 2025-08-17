@@ -2,9 +2,12 @@ import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { Database } from '@/types/supabase'
 import { EnhancedReleaseNotesList } from '@/components/public/enhanced-release-notes-list'
+import { PreviewModeWrapper } from '@/components/public/preview-mode-wrapper'
+import { FaviconUpdater } from '@/components/public/favicon-updater'
 
 type Props = {
   params: { org_slug: string }
+  searchParams?: { [key: string]: string | string[] | undefined }
 }
 
 async function getOrganizationReleaseNotes(orgSlug: string) {
@@ -59,7 +62,8 @@ async function getOrganizationReleaseNotes(orgSlug: string) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const data = await getOrganizationReleaseNotes(params.org_slug)
+  const { org_slug } = await params
+  const data = await getOrganizationReleaseNotes(org_slug)
 
   if (!data) {
     return {
@@ -88,10 +92,30 @@ export async function generateMetadata({ params }: Props) {
     },
   }
 
-  // Add favicon if provided, else fallback to default
+  // Add comprehensive favicon support with cache busting
+  const baseFaviconUrl = organization.favicon_url || '/branding/favicon-placeholder.ico'
+  // Add cache busting parameter using organization ID and favicon URL hash
+  const faviconHash = organization.favicon_url ? 
+    organization.favicon_url.split('/').pop()?.split('?')[0] || 'default' : 
+    'default'
+  const faviconUrl = baseFaviconUrl.includes('?') 
+    ? `${baseFaviconUrl}&v=${faviconHash}` 
+    : `${baseFaviconUrl}?v=${faviconHash}`
+    
   metadata.icons = {
-    icon: organization.favicon_url || '/branding/favicon-placeholder.ico',
-    shortcut: organization.favicon_url || '/branding/favicon-placeholder.ico',
+    icon: [
+      { url: faviconUrl, sizes: '16x16', type: 'image/x-icon' },
+      { url: faviconUrl, sizes: '32x32', type: 'image/x-icon' },
+      { url: faviconUrl, sizes: '48x48', type: 'image/x-icon' },
+    ],
+    shortcut: faviconUrl,
+    apple: faviconUrl,
+  }
+  
+  // Add additional favicon links for better browser support
+  metadata.other = {
+    'msapplication-TileColor': organization.brand_color || '#7F56D9',
+    'theme-color': organization.brand_color || '#7F56D9',
   }
 
   // Add social media image if provided
@@ -110,20 +134,68 @@ export async function generateMetadata({ params }: Props) {
   return metadata
 }
 
-export default async function OrganizationReleaseNotesPage({ params }: Props) {
-  const data = await getOrganizationReleaseNotes(params.org_slug)
+export default async function OrganizationReleaseNotesPage({ params, searchParams }: Props) {
+  const { org_slug } = await params
+  const resolvedSearchParams = await searchParams
+
+  const data = await getOrganizationReleaseNotes(org_slug)
 
   if (!data) {
     notFound()
   }
 
-  const { organization, releaseNotes } = data
+  const { organization, releaseNotes } = data!
+
+  // Preview-only CSS injection via query params (no DB write, for admin preview UX)
+  const previewBrand = typeof resolvedSearchParams?.preview_brand === 'string' ? resolvedSearchParams.preview_brand : undefined
+  const previewCssEnabled = resolvedSearchParams?.preview_css_enabled === '1' || resolvedSearchParams?.preview_css_enabled === 'true'
+  const previewCssRaw = typeof resolvedSearchParams?.preview_css === 'string' ? decodeURIComponent(resolvedSearchParams.preview_css) : ''
+  const previewCssLarge = resolvedSearchParams?.preview_css_large === '1' // Signal that CSS will come via postMessage
+  const previewCss = previewCssEnabled ? previewCssRaw : ''
+
+  // Always inject brand color, use preview if available
+  const effectiveBrandColor = previewBrand || organization.brand_color || '#7F56D9'
+
+  // Sanitize CSS to prevent breaking the page
+  const sanitizedPreviewCss = previewCss ? previewCss.replace(/javascript:/gi, '').replace(/<script/gi, '') : ''
+
+  // Check if this is a preview request
+  const isPreviewMode = previewBrand || previewCssEnabled || previewCssLarge
 
   return (
-    <EnhancedReleaseNotesList
-      organization={organization}
-      releaseNotes={releaseNotes}
-      orgSlug={params.org_slug}
-    />
+    <>
+      {/* Base brand color styles - always consistent */}
+      <style suppressHydrationWarning>
+        {`:root { 
+          --brand-color: ${effectiveBrandColor}; 
+          --brand-color-hover: ${effectiveBrandColor}dd;
+        }`}
+      </style>
+
+      {/* Dynamic favicon updater */}
+      <FaviconUpdater 
+        faviconUrl={organization.favicon_url} 
+        organizationId={organization.id} 
+      />
+
+      {/* Handle preview mode with client-side rendering */}
+      {isPreviewMode ? (
+        <PreviewModeWrapper
+          organization={organization}
+          releaseNotes={releaseNotes}
+          orgSlug={org_slug}
+          previewCss={sanitizedPreviewCss}
+          previewCssEnabled={previewCssEnabled}
+          previewCssLarge={previewCssLarge}
+        />
+      ) : (
+        /* Normal SSR for public users */
+        <EnhancedReleaseNotesList
+          organization={organization}
+          releaseNotes={releaseNotes}
+          orgSlug={org_slug}
+        />
+      )}
+    </>
   )
 }

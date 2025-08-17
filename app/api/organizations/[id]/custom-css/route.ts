@@ -11,28 +11,44 @@ import { CSSValidator } from '@/lib/css-validator'
  */
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
+    const { id } = params
+
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
     if (sessionError || !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // First, check if the user is a member of this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('organization_id, role')
+      .eq('user_id', session.user.id)
+      .eq('organization_id', id)
+      .single()
+
+    if (membershipError || !membership) {
+      return NextResponse.json(
+        { error: 'Organization not found or access denied' },
+        { status: 404 }
+      )
+    }
+
     // Get organization custom CSS
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
       .select('custom_css, brand_color, custom_css_enabled')
-      .eq('id', params.id)
-      .eq('user_id', session.user.id)
+      .eq('id', id)
       .single()
 
     if (orgError || !organization) {
       return NextResponse.json(
-        { error: 'Organization not found or access denied' },
+        { error: 'Organization not found' },
         { status: 404 }
       )
     }
@@ -67,6 +83,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = params
     const { customCSS, enabled = true } = await request.json()
 
     if (typeof customCSS !== 'string') {
@@ -83,23 +100,37 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user owns the organization
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .select('id, name')
-      .eq('id', params.id)
+    // First, check if the user is a member of this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('organization_id, role')
       .eq('user_id', session.user.id)
+      .eq('organization_id', id)
       .single()
 
-    if (orgError || !organization) {
+    if (membershipError || !membership) {
       return NextResponse.json(
         { error: 'Organization not found or access denied' },
         { status: 404 }
       )
     }
 
+    // Verify organization exists
+    const { data: organization, error: orgError } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .eq('id', id)
+      .single()
+
+    if (orgError || !organization) {
+      return NextResponse.json(
+        { error: 'Organization not found' },
+        { status: 404 }
+      )
+    }
+
     // Validate CSS if provided
-    let validationResult = { isValid: true, errors: [], warnings: [], sanitizedCSS: '' }
+    let validationResult = { isValid: true, errors: [] as string[], warnings: [] as string[], sanitizedCSS: '' }
     
     if (customCSS.trim()) {
       validationResult = CSSValidator.validate(customCSS)
@@ -121,7 +152,7 @@ export async function PUT(
         custom_css_enabled: enabled,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (updateError) {
       throw updateError
@@ -153,10 +184,11 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = params
     const supabase = createRouteHandlerClient({ cookies })
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
@@ -164,15 +196,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user owns the organization
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('id', params.id)
+    // First, check if the user is a member of this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('organization_id, role')
       .eq('user_id', session.user.id)
+      .eq('organization_id', id)
       .single()
 
-    if (orgError || !organization) {
+    if (membershipError || !membership) {
       return NextResponse.json(
         { error: 'Organization not found or access denied' },
         { status: 404 }
@@ -187,7 +219,7 @@ export async function DELETE(
         custom_css_enabled: false,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (updateError) {
       throw updateError

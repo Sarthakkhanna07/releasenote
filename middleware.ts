@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 
-import { 
-  addSecurityHeaders, 
-  apiRateLimit, 
-  authRateLimit, 
+import {
+  addSecurityHeaders,
+  apiRateLimit,
+  authRateLimit,
   publicRateLimit,
   getClientIP,
-  logSecurityEvent 
+  logSecurityEvent
 } from './lib/security'
 
 // Protected routes that require authentication
@@ -48,6 +48,18 @@ export async function middleware(request: NextRequest) {
   // Add security headers to all responses
   addSecurityHeaders(response)
 
+  // Allow embedding public notes pages in same-origin iframes (for admin preview)
+  if (pathname.startsWith('/notes/')) {
+    const csp = response.headers.get('Content-Security-Policy') || ''
+    if (csp) {
+      const updatedCsp = csp.includes("frame-ancestors 'none'")
+        ? csp.replace("frame-ancestors 'none'", "frame-ancestors 'self'")
+        : csp
+      response.headers.set('Content-Security-Policy', updatedCsp)
+    }
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+  }
+
   // Apply rate limiting based on route type
   let rateLimitResult: { success: boolean; error?: string } = { success: true }
 
@@ -69,11 +81,11 @@ export async function middleware(request: NextRequest) {
     })
 
     return new NextResponse(
-      JSON.stringify({ 
-        error: 'Rate limit exceeded', 
-        message: 'Too many requests. Please try again later.' 
+      JSON.stringify({
+        error: 'Rate limit exceeded',
+        message: 'Too many requests. Please try again later.'
       }),
-      { 
+      {
         status: 429,
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +97,7 @@ export async function middleware(request: NextRequest) {
 
   // Check for protected routes (including root dashboard)
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
-  
+
   if (isProtectedRoute) {
     try {
       const supabase = createMiddlewareClient({ req: request, res: response })
@@ -99,16 +111,16 @@ export async function middleware(request: NextRequest) {
 
       // Add user context to response headers (for logging)
       response.headers.set('X-User-ID', session.user.id)
-      
+
     } catch (error) {
       console.error('Middleware auth error:', error)
-      
+
       // Log security event
       logSecurityEvent({
         type: 'suspicious_activity',
         ip: getClientIP(request),
         userAgent: request.headers.get('user-agent') || undefined,
-        details: { 
+        details: {
           path: pathname,
           error: error instanceof Error ? error.message : 'Unknown error'
         }
@@ -123,17 +135,23 @@ export async function middleware(request: NextRequest) {
     // Add API-specific headers
     response.headers.set('X-API-Version', '1.0')
     response.headers.set('X-Request-ID', crypto.randomUUID())
-    
-    // Validate Content-Type for POST/PUT requests
+
+    // Validate Content-Type for POST/PUT requests (except file upload endpoints)
     if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
       const contentType = request.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
+
+      // Allow multipart/form-data for file upload endpoints
+      const isFileUploadEndpoint = pathname.includes('/upload-logo') ||
+        pathname.includes('/upload') ||
+        pathname.includes('/file')
+
+      if (!isFileUploadEndpoint && (!contentType || !contentType.includes('application/json'))) {
         return new NextResponse(
-          JSON.stringify({ 
-            error: 'Invalid Content-Type', 
-            message: 'Content-Type must be application/json' 
+          JSON.stringify({
+            error: 'Invalid Content-Type',
+            message: 'Content-Type must be application/json'
           }),
-          { 
+          {
             status: 400,
             headers: { 'Content-Type': 'application/json' }
           }
@@ -169,7 +187,7 @@ export async function middleware(request: NextRequest) {
       type: 'suspicious_activity',
       ip: getClientIP(request),
       userAgent,
-      details: { 
+      details: {
         path: pathname,
         reason: 'Suspicious user agent'
       }

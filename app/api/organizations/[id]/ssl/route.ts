@@ -22,17 +22,31 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user owns the organization
+    // First, check if the user is a member of this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('organization_id, role')
+      .eq('user_id', session.user.id)
+      .eq('organization_id', params.id)
+      .single()
+
+    if (membershipError || !membership) {
+      return NextResponse.json(
+        { error: 'Organization not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Verify organization exists
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
       .select('id, custom_domain, domain_verified')
       .eq('id', params.id)
-      .eq('user_id', session.user.id)
       .single()
 
     if (orgError || !organization) {
       return NextResponse.json(
-        { error: 'Organization not found or access denied' },
+        { error: 'Organization not found' },
         { status: 404 }
       )
     }
@@ -122,17 +136,31 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user owns the organization and domain is verified
+    // First, check if the user is a member of this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('organization_id, role')
+      .eq('user_id', session.user.id)
+      .eq('organization_id', params.id)
+      .single()
+
+    if (membershipError || !membership) {
+      return NextResponse.json(
+        { error: 'Organization not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Verify organization exists and domain is verified
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
       .select('id, custom_domain, domain_verified')
       .eq('id', params.id)
-      .eq('user_id', session.user.id)
       .single()
 
     if (orgError || !organization) {
       return NextResponse.json(
-        { error: 'Organization not found or access denied' },
+        { error: 'Organization not found' },
         { status: 404 }
       )
     }
@@ -263,17 +291,31 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user owns the organization
+    // First, check if the user is a member of this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('organization_id, role')
+      .eq('user_id', session.user.id)
+      .eq('organization_id', params.id)
+      .single()
+
+    if (membershipError || !membership) {
+      return NextResponse.json(
+        { error: 'Organization not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Verify organization exists
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
       .select('id, custom_domain')
       .eq('id', params.id)
-      .eq('user_id', session.user.id)
       .single()
 
     if (orgError || !organization) {
       return NextResponse.json(
-        { error: 'Organization not found or access denied' },
+        { error: 'Organization not found' },
         { status: 404 }
       )
     }

@@ -42,7 +42,7 @@ export function EnhancedReleaseNotesList({
   orgSlug
 }: EnhancedReleaseNotesListProps) {
   const [filteredNotes, setFilteredNotes] = useState<ReleaseNote[]>(releaseNotes)
-  
+
   const brandColor = organization.brand_color || '#7F56D9'
 
   const extractTextPreview = (html: string, maxLength: number = 160): string => {
@@ -64,29 +64,23 @@ export function EnhancedReleaseNotesList({
     // Generate consistent colors for categories
     const colors = [
       'bg-blue-100 text-blue-800',
-      'bg-green-100 text-green-800', 
+      'bg-green-100 text-green-800',
       'bg-purple-100 text-purple-800',
       'bg-orange-100 text-orange-800',
       'bg-pink-100 text-pink-800',
       'bg-indigo-100 text-indigo-800'
     ]
-    
+
     const hash = category.split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0)
       return a & a
     }, 0)
-    
+
     return colors[Math.abs(hash) % colors.length]
   }
 
   return (
-    <div 
-      className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 sm:py-8 md:py-12 px-4 sm:px-6 lg:px-8 release-notes-container"
-      style={{
-        '--brand-color': brandColor,
-        '--brand-color-hover': `${brandColor}dd`,
-      } as React.CSSProperties}
-    >
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 sm:py-8 md:py-12 px-4 sm:px-6 lg:px-8 release-notes-container">
       {/* Inject Custom CSS if enabled */}
       {organization.custom_css_enabled && organization.custom_css && (
         <style dangerouslySetInnerHTML={{ __html: organization.custom_css }} />
@@ -103,17 +97,19 @@ export function EnhancedReleaseNotesList({
               className="rounded-full sm:w-20 sm:h-20 bg-gray-200 dark:bg-gray-700 object-cover"
             />
           </div>
-          
+
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 px-2">
             {organization.name}
           </h1>
-          
+
           {organization.description && (
             <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed px-4">
               {organization.description}
             </p>
           )}
         </header>
+
+
 
         {/* Search and Filters - Mobile Optimized */}
         <div className="mb-6 md:mb-8 px-2 sm:px-0">
@@ -134,7 +130,7 @@ export function EnhancedReleaseNotesList({
               No release notes found
             </h3>
             <p className="text-sm md:text-base text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
-              {releaseNotes.length === 0 
+              {releaseNotes.length === 0
                 ? `${organization.name} hasn't published any release notes yet.`
                 : 'Try adjusting your search or filter criteria.'
               }
@@ -161,19 +157,19 @@ export function EnhancedReleaseNotesList({
                         />
                       </div>
                     )}
-                    
+
                     <div className="p-4 sm:p-6 flex-1 flex flex-col">
                       {/* Category and Tags */}
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3">
                         {note.category && (
-                          <Badge 
-                            variant="secondary" 
+                          <Badge
+                            variant="secondary"
                             className={`text-xs ${getCategoryColor(note.category)}`}
                           >
                             {note.category}
                           </Badge>
                         )}
-                        
+
                         {note.tags && note.tags.slice(0, 2).map((tag) => (
                           <Badge
                             key={tag}
@@ -184,7 +180,7 @@ export function EnhancedReleaseNotesList({
                             {tag}
                           </Badge>
                         ))}
-                        
+
                         {note.tags && note.tags.length > 2 && (
                           <Badge variant="outline" className="text-xs">
                             +{note.tags.length - 2} more
@@ -215,7 +211,7 @@ export function EnhancedReleaseNotesList({
                             <CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                             <span className="truncate">{formatDate(note.published_at)}</span>
                           </div>
-                          
+
                           {note.views && note.views > 0 && (
                             <div className="flex items-center gap-1">
                               <EyeIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />

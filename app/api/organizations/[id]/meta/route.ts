@@ -13,6 +13,7 @@ interface MetaTagsData {
   meta_description?: string
   meta_image_url?: string
   favicon_url?: string
+  logo_url?: string
   brand_color?: string
 }
 
@@ -28,6 +29,21 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // First, check if the user is a member of this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('organization_id, role')
+      .eq('user_id', session.user.id)
+      .eq('organization_id', params.id)
+      .single()
+
+    if (membershipError || !membership) {
+      return NextResponse.json(
+        { error: 'Organization not found or access denied' },
+        { status: 404 }
+      )
+    }
+
     // Get organization meta data
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
@@ -38,17 +54,17 @@ export async function GET(
         meta_description, 
         meta_image_url, 
         favicon_url, 
+        logo_url,
         brand_color,
         custom_domain,
         domain_verified
       `)
       .eq('id', params.id)
-      .eq('user_id', session.user.id)
       .single()
 
     if (orgError || !organization) {
       return NextResponse.json(
-        { error: 'Organization not found or access denied' },
+        { error: 'Organization not found' },
         { status: 404 }
       )
     }
@@ -60,6 +76,7 @@ export async function GET(
         description: organization.meta_description || `Release notes and product updates from ${organization.name}`,
         image: organization.meta_image_url,
         favicon: organization.favicon_url,
+        logo: organization.logo_url,
         brandColor: organization.brand_color || '#7F56D9'
       },
       domain: {
@@ -104,7 +121,7 @@ export async function PUT(
     }
 
     // Validate URLs if provided
-    const urlFields = ['meta_image_url', 'favicon_url']
+    const urlFields = ['meta_image_url', 'favicon_url', 'logo_url']
     for (const field of urlFields) {
       const url = data[field as keyof MetaTagsData]
       if (url && typeof url === 'string') {
@@ -134,17 +151,31 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user owns the organization
+    // First, check if the user is a member of this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('organization_id, role')
+      .eq('user_id', session.user.id)
+      .eq('organization_id', params.id)
+      .single()
+
+    if (membershipError || !membership) {
+      return NextResponse.json(
+        { error: 'Organization not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Verify organization exists
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
       .select('id, name')
       .eq('id', params.id)
-      .eq('user_id', session.user.id)
       .single()
 
     if (orgError || !organization) {
       return NextResponse.json(
-        { error: 'Organization not found or access denied' },
+        { error: 'Organization not found' },
         { status: 404 }
       )
     }
@@ -157,6 +188,7 @@ export async function PUT(
         meta_description: data.meta_description || null,
         meta_image_url: data.meta_image_url || null,
         favicon_url: data.favicon_url || null,
+        logo_url: data.logo_url || null,
         brand_color: data.brand_color || '#7F56D9'
       })
       .eq('id', params.id)
@@ -173,6 +205,7 @@ export async function PUT(
         description: data.meta_description || `Release notes and product updates from ${organization.name}`,
         image: data.meta_image_url,
         favicon: data.favicon_url,
+        logo: data.logo_url,
         brandColor: data.brand_color || '#7F56D9'
       }
     })

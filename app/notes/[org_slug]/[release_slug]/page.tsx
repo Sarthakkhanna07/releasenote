@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { Database, ReleaseNoteWithOrganization } from '@/types/supabase'
 import Image from 'next/image'
 import { sanitizeHtml } from '@/lib/sanitize'
@@ -136,37 +137,50 @@ export default async function PublicReleaseNotePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Minimal back button to org notes */}
+      <div className="max-w-3xl mx-auto mb-4">
+        <Link
+          href={`/notes/${params.org_slug}`}
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
+          aria-label="Back to all updates"
+          prefetch
+        >
+          <span aria-hidden>←</span>
+          <span>Back to all updates</span>
+        </Link>
+      </div>
+
       <article className="max-w-3xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-                 {/* Optional Featured Image */}
-         {note.featured_image_url && (
-            <div className="w-full h-64 relative">
-             <Image 
-               src={note.featured_image_url} 
-               alt={`${note.title} featured image`} 
-               fill
-               style={{ objectFit: 'cover' }}
-               priority // Prioritize loading featured image
-               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-             />
-           </div>
-         )}
+        {/* Optional Featured Image */}
+        {note.featured_image_url && (
+          <div className="w-full h-64 relative">
+            <Image 
+              src={note.featured_image_url} 
+              alt={`${note.title} featured image`} 
+              fill
+              style={{ objectFit: 'cover' }}
+              priority // Prioritize loading featured image
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        )}
 
         <div className="px-6 py-8 sm:px-10">
           {/* Optional Org Header */}
           {(organization.name || organization.logo_url) && (
-             <div className="mb-6 flex items-center space-x-3">
-                {organization.logo_url && (
-                    <Image 
-                      src={organization.logo_url} 
-                      alt={`${organization.name} Logo`} 
-                      width={UI_CONSTANTS.LOGO_SIZE} 
-                      height={UI_CONSTANTS.LOGO_SIZE} 
-                      className="rounded-full" 
-                    />
-                )}
-                {organization.name && (
-                    <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">{organization.name}</span>
-                )}
+            <div className="mb-6 flex items-center space-x-3">
+              {organization.logo_url && (
+                <Image 
+                  src={organization.logo_url} 
+                  alt={`${organization.name} Logo`} 
+                  width={UI_CONSTANTS.LOGO_SIZE} 
+                  height={UI_CONSTANTS.LOGO_SIZE} 
+                  className="rounded-full" 
+                />
+              )}
+              {organization.name && (
+                <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">{organization.name}</span>
+              )}
             </div>
           )}
 

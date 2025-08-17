@@ -1,0 +1,552 @@
+name,description,category,css_variables,custom_css,preview_image_url,is_public
+"Glassmorphism","Modern glassmorphism design with blur effects and transparency","modern","{}","/* Glassmorphism Theme */
+.release-notes-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  min-height: 100vh;
+}
+
+header.text-center {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 20px !important;
+  padding: 3rem 2rem !important;
+  margin-bottom: 2rem !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+}
+
+header h1 {
+  color: white !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+header p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 1.1rem !important;
+}
+
+.custom-css-test {
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.bg-white {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+}
+
+.text-gray-900 {
+  color: white !important;
+}
+
+.text-gray-600 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}",null,true
+"Neumorphism","Soft neumorphic design with subtle shadows and depth","modern","{}","/* Neumorphism Theme */
+.release-notes-container {
+  background: #e0e5ec !important;
+  color: #2d3748 !important;
+}
+
+header.text-center {
+  background: #e0e5ec !important;
+  border-radius: 25px !important;
+  padding: 3rem 2rem !important;
+  margin-bottom: 2rem !important;
+  box-shadow: 
+    20px 20px 60px #bebebe,
+    -20px -20px 60px #ffffff !important;
+  border: none !important;
+}
+
+header h1 {
+  color: #2d3748 !important;
+  font-weight: 700 !important;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+header p {
+  color: #4a5568 !important;
+}
+
+.custom-css-test {
+  background: #e0e5ec !important;
+  border-radius: 15px !important;
+  box-shadow: 
+    inset 8px 8px 16px #bebebe,
+    inset -8px -8px 16px #ffffff !important;
+  color: var(--brand-color) !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+.bg-white {
+  background: #e0e5ec !important;
+  border-radius: 20px !important;
+  box-shadow: 
+    15px 15px 30px #bebebe,
+    -15px -15px 30px #ffffff !important;
+  border: none !important;
+  padding: 1.5rem !important;
+}
+
+.text-gray-900 {
+  color: #2d3748 !important;
+}
+
+.text-gray-600 {
+  color: #4a5568 !important;
+}",null,true
+"Gradient Mesh","Vibrant gradient mesh background with modern card design","creative","{}","/* Gradient Mesh Theme */
+.release-notes-container {
+  background: 
+    radial-gradient(circle at 20% 80%, #120078 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, #ff6b6b 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, #4ecdc4 0%, transparent 50%),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  min-height: 100vh;
+  color: white !important;
+}
+
+header.text-center {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 24px !important;
+  padding: 3rem 2rem !important;
+  margin-bottom: 2rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+header.text-center::before {
+  content: """";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+header h1 {
+  color: white !important;
+  font-weight: 900 !important;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+header p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.custom-css-test {
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.bg-white {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+.text-gray-900 {
+  color: white !important;
+}
+
+.text-gray-600 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}",null,true
+"Neon Dark","Cyberpunk-inspired dark theme with neon accents","dark","{}","/* Neon Dark Theme */
+.release-notes-container {
+  background: 
+    radial-gradient(circle at 25% 25%, #1a0033 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, #001a33 0%, transparent 50%),
+    #0a0a0a !important;
+  color: #00ff88 !important;
+  font-family: ""Courier New"", monospace !important;
+  min-height: 100vh;
+}
+
+header.text-center {
+  background: rgba(0, 255, 136, 0.05) !important;
+  border: 2px solid #00ff88 !important;
+  border-radius: 8px !important;
+  padding: 3rem 2rem !important;
+  margin-bottom: 2rem !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 136, 0.3),
+    inset 0 0 20px rgba(0, 255, 136, 0.05) !important;
+  position: relative !important;
+}
+
+header.text-center::before {
+  content: """";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #00ff88, #0088ff, #ff0088, #00ff88);
+  border-radius: 8px;
+  z-index: -1;
+  animation: borderGlow 3s linear infinite;
+}
+
+@keyframes borderGlow {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+header h1 {
+  color: #00ff88 !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 3px !important;
+  text-shadow: 0 0 10px #00ff88 !important;
+  font-family: ""Courier New"", monospace !important;
+}
+
+header p {
+  color: #0088ff !important;
+  text-shadow: 0 0 5px #0088ff !important;
+}
+
+.custom-css-test {
+  background: linear-gradient(45deg, #ff0088, #0088ff) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  border: 1px solid #00ff88 !important;
+  box-shadow: 0 0 15px rgba(255, 0, 136, 0.5) !important;
+  animation: pulse 2s infinite !important;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.bg-white {
+  background: rgba(0, 255, 136, 0.03) !important;
+  border: 1px solid rgba(0, 255, 136, 0.2) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+.text-gray-900 {
+  color: #00ff88 !important;
+}
+
+.text-gray-600 {
+  color: #0088ff !important;
+}
+
+a {
+  color: #ff0088 !important;
+  text-shadow: 0 0 5px #ff0088 !important;
+}",null,true
+"Brutalist","Bold brutalist design with strong typography and contrasts","creative","{}","/* Brutalist Theme */
+.release-notes-container {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-family: ""Arial Black"", Arial, sans-serif !important;
+}
+
+header.text-center {
+  background: var(--brand-color) !important;
+  border: 4px solid #ffffff !important;
+  border-radius: 0 !important;
+  padding: 3rem 2rem !important;
+  margin-bottom: 2rem !important;
+  box-shadow: 8px 8px 0px #ffffff !important;
+  transform: rotate(-1deg) !important;
+}
+
+header h1 {
+  color: #000000 !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-size: 3rem !important;
+  text-shadow: 3px 3px 0px #ffffff !important;
+}
+
+header p {
+  color: #000000 !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.custom-css-test {
+  background: #ffff00 !important;
+  color: #000000 !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: 4px 4px 0px #ffffff !important;
+  transform: rotate(1deg) !important;
+}
+
+.bg-white {
+  background: #ffffff !important;
+  border: 3px solid var(--brand-color) !important;
+  border-radius: 0 !important;
+  box-shadow: 6px 6px 0px var(--brand-color) !important;
+  transform: rotate(-0.5deg) !important;
+}
+
+.text-gray-900 {
+  color: #000000 !important;
+  font-weight: 900 !important;
+}
+
+.text-gray-600 {
+  color: #333333 !important;
+  font-weight: 700 !important;
+}
+
+a {
+  color: var(--brand-color) !important;
+  text-decoration: underline !important;
+  text-decoration-thickness: 3px !important;
+  font-weight: 900 !important;
+}",null,true
+"Minimal Luxury","Elegant minimal design with luxury aesthetics","minimal","{}","/* Minimal Luxury Theme */
+.release-notes-container {
+  background: #fafafa !important;
+  color: #1a1a1a !important;
+  font-family: ""Georgia"", serif !important;
+}
+
+header.text-center {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #d4af37 !important;
+  border-radius: 0 !important;
+  padding: 4rem 2rem 3rem 2rem !important;
+  margin-bottom: 4rem !important;
+  position: relative !important;
+}
+
+header.text-center::after {
+  content: """";
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: #d4af37;
+}
+
+header h1 {
+  color: #1a1a1a !important;
+  font-weight: 300 !important;
+  font-size: 3.5rem !important;
+  letter-spacing: -2px !important;
+  margin-bottom: 1rem !important;
+}
+
+header p {
+  color: #666666 !important;
+  font-size: 1.2rem !important;
+  font-style: italic !important;
+  font-weight: 300 !important;
+}
+
+.custom-css-test {
+  background: #d4af37 !important;
+  color: #ffffff !important;
+  font-weight: 400 !important;
+  border: none !important;
+  font-family: ""Georgia"", serif !important;
+  letter-spacing: 1px !important;
+}
+
+.bg-white {
+  background: #ffffff !important;
+  border: 1px solid #e8e8e8 !important;
+  border-radius: 0 !important;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05) !important;
+  padding: 2rem !important;
+}
+
+.text-gray-900 {
+  color: #1a1a1a !important;
+  font-weight: 400 !important;
+}
+
+.text-gray-600 {
+  color: #666666 !important;
+}
+
+a {
+  color: #d4af37 !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid #d4af37 !important;
+  font-weight: 400 !important;
+}
+
+a:hover {
+  border-bottom: 2px solid #d4af37 !important;
+}",null,true
+"Soft Pastel","Gentle pastel colors with soft shadows and rounded corners","soft","{}","/* Soft Pastel Theme */
+.release-notes-container {
+  background: linear-gradient(135deg, #ffeef8 0%, #f0f8ff 100%) !important;
+  color: #4a5568 !important;
+}
+
+header.text-center {
+  background: linear-gradient(135deg, #ffd6e8 0%, #e6f3ff 100%) !important;
+  border: none !important;
+  border-radius: 30px !important;
+  padding: 3rem 2rem !important;
+  margin-bottom: 2rem !important;
+  box-shadow: 0 20px 40px rgba(255, 182, 193, 0.3) !important;
+}
+
+header h1 {
+  color: #6b46c1 !important;
+  font-weight: 600 !important;
+  background: linear-gradient(45deg, #6b46c1, #ec4899);
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+header p {
+  color: #7c3aed !important;
+}
+
+.custom-css-test {
+  background: linear-gradient(45deg, #fbbf24, #f472b6) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: none !important;
+  box-shadow: 0 10px 25px rgba(244, 114, 182, 0.4) !important;
+}
+
+.bg-white {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 182, 193, 0.3) !important;
+  border-radius: 25px !important;
+  box-shadow: 0 15px 35px rgba(255, 182, 193, 0.2) !important;
+}
+
+.text-gray-900 {
+  color: #4a5568 !important;
+}
+
+.text-gray-600 {
+  color: #718096 !important;
+}
+
+a {
+  color: #ec4899 !important;
+  font-weight: 500 !important;
+}",null,true
+"Corporate Modern","Professional corporate design with clean lines and subtle branding","corporate","{}","/* Corporate Modern Theme */
+.release-notes-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+  color: #1e293b !important;
+}
+
+header.text-center {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  padding: 3rem 2rem !important;
+  margin-bottom: 2rem !important;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  position: relative !important;
+}
+
+header.text-center::before {
+  content: """";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--brand-color), #3b82f6);
+  border-radius: 16px 16px 0 0;
+}
+
+header h1 {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+  font-size: 2.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+header p {
+  color: #64748b !important;
+  font-size: 1.1rem !important;
+}
+
+.custom-css-test {
+  background: var(--brand-color) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
+}
+
+.bg-white {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.3s ease !important;
+}
+
+.bg-white:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+.text-gray-900 {
+  color: #1e293b !important;
+}
+
+.text-gray-600 {
+  color: #64748b !important;
+}
+
+a {
+  color: var(--brand-color) !important;
+  font-weight: 500 !important;
+}",null,true
