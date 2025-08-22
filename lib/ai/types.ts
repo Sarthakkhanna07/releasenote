@@ -55,6 +55,8 @@ export interface AiProvider {
       temperature?: number
     }
   ): Promise<string>
+
+  generateFromPrompts(prompts: { systemPrompt: string; userPrompt: string; }, options?: { model?: string, maxTokens?: number, temperature?: number }): Promise<string>;
   
   generateWithContext?(
     userPrompt: string,

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { GitHubService } from "@/lib/integrations/github"
-import { AIService } from "@/lib/services/ai.service"
 
 export async function POST(request: NextRequest) {
     try {
@@ -109,11 +108,45 @@ export async function POST(request: NextRequest) {
                         dataSources.selectedCommits.includes(commit.sha)
                     )
 
-                    console.log(`✅ Fetched ${selectedCommitsData.length} selected commits`)
-                } catch (error) {
-                    console.warn('Failed to fetch commits:', error)
-                }
-            }
+                    // Fallback: fetch any missing SHAs individually (may be outside date/page window)
+                    const foundShas = new Set(selectedCommitsData.map(c => c.sha))
+                    const missingShas = (dataSources.selectedCommits as string[]).filter(sha => !foundShas.has(sha))
+                    if (missingShas.length > 0) {
+                        console.log(`🔎 Selected commits missing from initial page: ${missingShas.length}. Fetching individually...`)
+                        for (const sha of missingShas) {
+                            try {
+                                const commit = await github.getCommit(owner, repo, sha)
+                                selectedCommitsData.push(commit)
+                            } catch (e) {
+                                console.warn(`⚠️ Failed to fetch commit ${sha}:`, e)
+                            }
+                        }
+                    }
+
+                                console.log(`✅ Fetched ${selectedCommitsData.length} selected commits (after fallback)`)            
+        } catch (error) {
+            console.warn('Failed to fetch commits:', error)
+        }
+    }
+
+    // Validate that we have commits to work with
+    if (selectedCommitsData.length === 0 && dataSources.selectedCommits?.length > 0) {
+        console.error('❌ No commits fetched despite selection')
+        return NextResponse.json({
+            error: "No commits found or fetched",
+            details: "Please check your commit selection and try again. The selected commits may not exist or be accessible.",
+            suggestion: "Verify the commit SHAs are correct and try again"
+        }, { status: 400 })
+    }
+
+    if (selectedCommitsData.length === 0 && !dataSources.additionalChanges?.trim()) {
+        console.error('❌ No commits and no additional changes provided')
+        return NextResponse.json({
+            error: "No content available for generation",
+            details: "Please provide either selected commits or additional changes to generate release notes",
+            suggestion: "Select commits from your repository or add manual changes"
+        }, { status: 400 })
+    }
 
             // Step 3: Build professional context-aware prompts
             console.log('🧠 Building professional AI prompts with full context...')
@@ -201,6 +234,10 @@ Use this context to ensure the release notes align with the organization's voice
                     }
                     userPrompt += '\n'
                 })
+            } else if (dataSources.selectedCommits?.length > 0) {
+                // Warning when commits were selected but none fetched
+                userPrompt += `⚠️ WARNING: No commits were successfully fetched despite selection. 
+                Generating based on additional changes and instructions only.\n\n`
             }
 
             // Add additional changes if provided

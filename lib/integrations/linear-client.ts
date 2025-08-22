@@ -35,57 +35,91 @@ export class LinearAPIClient {
     variables: Record<string, unknown> = {},
     token: string
   ): Promise<unknown> {
-    try {
-      const response = await fetch(this.baseURL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          query,
-          variables
-        })
-      })
+    // Basic retry on 429 with server-provided Retry-After header (seconds)
+    let attempt = 0
+    const maxAttempts = 2
 
-      if (!response.ok) {
-        // Check for rate limiting
-        if (response.status === 429) {
-          const retryAfter = response.headers.get('retry-after')
+    // Small helper to sleep
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms))
+
+    while (attempt < maxAttempts) {
+      try {
+        // Dev diagnostic (no secrets): log minimal request info
+        try {
+          const preview = query.replace(/\s+/g, ' ').slice(0, 200)
+          console.debug('[Linear Client] Request', { attempt, preview, variables })
+        } catch {}
+        const response = await fetch(this.baseURL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            query,
+            variables
+          })
+        })
+
+        if (!response.ok) {
+          // Attempt to read error body for more context
+          let body: any = null
+          try {
+            body = await response.json()
+          } catch (_) {
+            // ignore parse errors
+          }
+
+          // Check for rate limiting
+          if (response.status === 429) {
+            const retryAfter = response.headers.get('retry-after')
+            if (attempt < maxAttempts - 1) {
+              const waitMs = Math.min( (Number(retryAfter) || 2) * 1000, 10_000)
+              await sleep(waitMs)
+              attempt++
+              continue
+            }
+            throw new LinearAPIError(
+              `Linear API rate limit exceeded. Retry after: ${retryAfter || 'unknown'}`,
+              response.status,
+              { retryAfter, body }
+            )
+          }
+          
+          console.error('[Linear Client] HTTP error', { status: response.status, statusText: response.statusText, body })
           throw new LinearAPIError(
-            `Linear API rate limit exceeded. Retry after: ${retryAfter || 'unknown'}`,
+            `Linear API request failed: ${response.status} ${response.statusText}`,
             response.status,
-            { retryAfter }
+            body
           )
         }
+
+        const data = await response.json()
         
-        throw new LinearAPIError(
-          `Linear API request failed: ${response.status} ${response.statusText}`,
-          response.status
-        )
-      }
+        if (data.errors && data.errors.length > 0) {
+          console.error('[Linear Client] GraphQL errors', data.errors)
+          throw new LinearAPIError(
+            `GraphQL errors: ${Array.isArray(data.errors) ? data.errors.map((e: { message?: string }) => e.message).join(', ') : ''}`,
+            400,
+            data.errors
+          )
+        }
 
-      const data = await response.json()
-      
-      if (data.errors && data.errors.length > 0) {
-        throw new LinearAPIError(
-          `GraphQL errors: ${Array.isArray(data.errors) ? data.errors.map((e: { message?: string }) => e.message).join(', ') : ''}`,
-          400,
-          data.errors
-        )
+        return data.data
+      } catch (error) {
+        // Only break out of loop for non-HTTP errors or after retries handled above
+        if (attempt >= maxAttempts - 1) {
+          throw error
+        }
+        // If the thrown error was not due to a 429 handled above, rethrow
+        if (!(error instanceof LinearAPIError) || error.status !== 429) {
+          throw error
+        }
+        // Otherwise, loop will continue due to continue in 429 branch
       }
-
-      return data.data
-    } catch (error) {
-      if (error instanceof LinearAPIError) {
-        throw error
-      }
-      throw new LinearAPIError(
-        `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        0,
-        { originalError: error }
-      )
     }
+
+    throw new LinearAPIError('Unexpected error in Linear client request', 500)
   }
 
   /**
@@ -154,24 +188,20 @@ export class LinearAPIClient {
     options: {
       first?: number
       after?: string
-      includeArchived?: boolean
     } = {}
   ): Promise<unknown> {
-    const { first = 50, after, includeArchived = false } = options
+    const { first = 50, after } = options
     
+    // Use a conservative field set to maximize compatibility with Linear's schema
     const query = `
-      query GetTeams($first: Int!, $after: String, $includeArchived: Boolean) {
-        teams(first: $first, after: $after, includeArchived: $includeArchived) {
+      query GetTeams($first: Int!, $after: String) {
+        teams(first: $first, after: $after) {
           nodes {
             id
             name
             key
             description
             color
-            icon
-            private
-            issueCount
-            activeCycleCount
             createdAt
             updatedAt
             organization {
@@ -189,7 +219,7 @@ export class LinearAPIClient {
       }
     `
     
-    const data = await this.request(query, { first, after, includeArchived }, token)
+    const data = await this.request(query, { first, after }, token)
     if (data && typeof data === 'object' && 'teams' in data) {
       return (data as { teams: unknown }).teams
     }
@@ -208,7 +238,7 @@ export class LinearAPIClient {
       assigneeId?: string
       stateType?: 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled'
       updatedSince?: string
-      orderBy?: 'createdAt' | 'updatedAt' | 'priority'
+      orderBy?: string // intentionally ignored due to schema differences; default server ordering is sufficient
     } = {}
   ): Promise<unknown> {
     const { 
@@ -218,21 +248,27 @@ export class LinearAPIClient {
       assigneeId, 
       stateType,
       updatedSince,
-      orderBy = 'updatedAt'
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      orderBy
     } = options
     
     // Build filter conditions
     const filters: string[] = []
-    if (teamId) filters.push(`team: { id: { eq: "${teamId}" } }`)
-    if (assigneeId) filters.push(`assignee: { id: { eq: "${assigneeId}" } }`)
-    if (stateType) filters.push(`state: { type: { eq: ${stateType} } }`)
-    if (updatedSince) filters.push(`updatedAt: { gte: "${updatedSince}" }`)
+    if (teamId) filters.push(`team: { id: { eq: \"${teamId}\" } }`)
+    if (assigneeId) filters.push(`assignee: { id: { eq: \"${assigneeId}\" } }`)
+    if (stateType) filters.push(`state: { type: { eq: "${stateType}" } }`)
+    if (updatedSince) filters.push(`updatedAt: { gte: \"${updatedSince}\" }`)
     
     const filterString = filters.length > 0 ? `filter: { ${filters.join(', ')} }` : ''
+
+    // Build issues() argument list without leaving a dangling comma when no filters are present
+    const issueArgs = ['first: $first', 'after: $after']
+    if (filterString) issueArgs.push(filterString)
+    const issueArgsJoined = issueArgs.join(', ')
     
     const query = `
-      query GetIssues($first: Int!, $after: String, $orderBy: PaginationOrderBy) {
-        issues(first: $first, after: $after, ${filterString}, orderBy: $orderBy) {
+      query GetIssues($first: Int!, $after: String) {
+        issues(${issueArgsJoined}) {
           nodes {
             id
             identifier
@@ -300,7 +336,7 @@ export class LinearAPIClient {
       }
     `
     
-    const data = await this.request(query, { first, after, orderBy }, token)
+    const data = await this.request(query, { first, after }, token)
     if (data && typeof data === 'object' && 'issues' in data) {
       return (data as { issues: unknown }).issues
     }
@@ -420,19 +456,16 @@ export class LinearAPIClient {
     options: {
       first?: number
       after?: string
-      teamId?: string
-      includeArchived?: boolean
     } = {}
   ): Promise<unknown> {
-    const { first = 50, after, teamId, includeArchived = false } = options
+    const { first = 50, after } = options
     
+    // Extremely conservative query: only basic scalar fields
     const query = `
-      query GetProjects($first: Int!, $after: String, $filter: ProjectFilterInput, $includeArchived: Boolean) {
+      query GetProjects($first: Int!, $after: String) {
         projects(
           first: $first,
-          after: $after,
-          filter: $filter,
-          includeArchived: $includeArchived
+          after: $after
         ) {
           nodes {
             id
@@ -447,40 +480,6 @@ export class LinearAPIClient {
             url
             createdAt
             updatedAt
-            lead {
-              id
-              name
-              displayName
-              email
-              avatarUrl
-            }
-            teams {
-              nodes {
-                id
-                name
-                key
-              }
-            }
-            members {
-              nodes {
-                id
-                name
-                displayName
-                email
-                avatarUrl
-              }
-            }
-            issues {
-              nodes {
-                id
-                identifier
-                title
-                state {
-                  name
-                  type
-                }
-              }
-            }
           }
           pageInfo {
             hasNextPage
@@ -492,7 +491,12 @@ export class LinearAPIClient {
       }
     `
 
-    const data = await this.request(query, { first, after, includeArchived }, token)
+    const variables: Record<string, unknown> = {
+      first,
+      after: after ?? null
+    }
+
+    const data = await this.request(query, variables, token)
     if (data && typeof data === 'object' && 'projects' in data) {
       return (data as { projects: unknown }).projects
     }
@@ -508,18 +512,16 @@ export class LinearAPIClient {
     options: {
       first?: number
       teamId?: string
-      includeArchived?: boolean
     } = {}
   ): Promise<unknown> {
-    const { first = 50, teamId, includeArchived = false } = options
+    const { first = 50, teamId } = options
     
     const searchQuery = `
-      query SearchIssues($query: String!, $first: Int!, $teamId: String, $includeArchived: Boolean) {
+      query SearchIssues($query: String!, $first: Int!, $teamId: String) {
         issueSearch(
           query: $query,
           first: $first,
-          teamId: $teamId,
-          includeArchived: $includeArchived
+          teamId: $teamId
         ) {
           nodes {
             id
@@ -569,8 +571,7 @@ export class LinearAPIClient {
     const variables: Record<string, unknown> = {
       query,
       first,
-      teamId: teamId ?? null,
-      includeArchived
+      teamId: teamId ?? null
     }
     const data = await this.request(searchQuery, variables, token)
     if (data && typeof data === 'object' && 'issueSearch' in data) {

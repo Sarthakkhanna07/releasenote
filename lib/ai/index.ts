@@ -9,8 +9,8 @@ function initializeProvider(): AiProvider {
   if (!aiProvider) {
     // Prefer Gemini if GEMINI_API_KEY is set
     if (process.env.GEMINI_API_KEY) {
-      const { geminiProvider } = require('./gemini')
-      aiProvider = geminiProvider
+      const { GeminiProvider } = require('./gemini')
+      aiProvider = new GeminiProvider()
     } else {
       // Default to Azure OpenAI
       const { azureOpenAIProvider } = require('./azure-openai')

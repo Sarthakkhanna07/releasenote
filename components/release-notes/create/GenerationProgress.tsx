@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { DefaultPageLayout } from "@/components/subframe-ui/ui/layouts/DefaultPageLayout"
 import { Button } from "@/components/subframe-ui/ui/components/Button"
@@ -23,103 +23,183 @@ export default function GenerationProgress({ wizardData }: GenerationProgressPro
     const [currentStep, setCurrentStep] = useState(0)
     const [generationError, setGenerationError] = useState<string | null>(null)
     const [generatedContent, setGeneratedContent] = useState<any>(null)
+    // Prevent duplicate runs in React Strict Mode (dev) which can cause double redirects
+    const hasStartedRef = useRef(false)
 
-    const [steps, setSteps] = useState<GenerationStep[]>([
-        {
-            id: 'fetch-data',
-            title: 'Fetching Repository Data',
-            description: 'Analyzing commits, issues, and repository information',
-            status: 'processing'
-        },
-        {
-            id: 'process-content',
-            title: 'Processing Content',
-            description: 'Extracting relevant information and organizing data',
-            status: 'pending'
-        },
-        {
-            id: 'build-prompt',
-            title: 'Building AI Prompt',
-            description: 'Constructing system and user prompts with context',
-            status: 'pending'
-        },
-        {
-            id: 'generate-notes',
-            title: 'Generating Release Notes',
-            description: 'AI is creating your professional release notes',
-            status: 'pending'
-        },
-        {
-            id: 'finalize',
-            title: 'Finalizing',
-            description: 'Preparing your release notes for editing',
-            status: 'pending'
-        }
-    ])
+    // Detect whether this is the Linear flow (no repository object provided)
+    const isLinearFlow = !wizardData?.repository
+
+    const initialSteps: GenerationStep[] = isLinearFlow
+        ? [
+            {
+                id: 'prepare-scope',
+                title: 'Preparing Linear Scope',
+                description: 'Validating selected teams, projects, and filters',
+                status: 'processing'
+            },
+            {
+                id: 'generate-notes',
+                title: 'Generating Release Notes',
+                description: 'AI is creating your professional release notes',
+                status: 'pending'
+            },
+            {
+                id: 'finalize',
+                title: 'Finalizing',
+                description: 'Preparing your release notes for editing',
+                status: 'pending'
+            }
+        ]
+        : [
+            {
+                id: 'fetch-data',
+                title: 'Fetching Repository Data',
+                description: 'Analyzing commits, issues, and repository information',
+                status: 'processing'
+            },
+            {
+                id: 'process-content',
+                title: 'Processing Content',
+                description: 'Extracting relevant information and organizing data',
+                status: 'pending'
+            },
+            {
+                id: 'build-prompt',
+                title: 'Building AI Prompt',
+                description: 'Constructing system and user prompts with context',
+                status: 'pending'
+            },
+            {
+                id: 'generate-notes',
+                title: 'Generating Release Notes',
+                description: 'AI is creating your professional release notes',
+                status: 'pending'
+            },
+            {
+                id: 'finalize',
+                title: 'Finalizing',
+                description: 'Preparing your release notes for editing',
+                status: 'pending'
+            }
+        ]
+
+    const [steps, setSteps] = useState<GenerationStep[]>(initialSteps)
 
     useEffect(() => {
+        if (hasStartedRef.current) return
+        hasStartedRef.current = true
         startGeneration()
     }, [])
 
     const startGeneration = async () => {
         try {
-            // Step 1: Fetch repository data
-            await processStep(0, async () => {
-                const response = await fetch('/api/release-notes/repository-data', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        repository: wizardData.repository,
-                        dataSources: wizardData.dataSources
-                    })
+            let generationResult: any = null
+
+            if (isLinearFlow) {
+                // Linear flow: skip repo fetch and call Linear generation API
+                await processStep(0, async () => {
+                    // Basic validation delay to show progress
+                    await new Promise(resolve => setTimeout(resolve, 400))
+                    return { scopeReady: true }
                 })
-                
-                if (!response.ok) throw new Error('Failed to fetch repository data')
-                return await response.json()
-            })
 
-            // Step 2: Process content
-            await processStep(1, async () => {
-                // Simulate content processing
-                await new Promise(resolve => setTimeout(resolve, 1500))
-                return { processed: true }
-            })
+                await processStep(1, async () => {
+                    const payload = {
+                        teams: wizardData.workspace?.teams || [],
+                        projects: wizardData.workspace?.projects || [],
+                        dateRange: wizardData.dataSources?.dateRange || undefined,
+                        issueFilters: wizardData.dataSources?.issueFilters || undefined,
+                        // Pass only selected issues if user chose them in the preview
+                        selectedIssues: wizardData.dataSources?.selectedIssues || undefined,
+                        template: wizardData.template || undefined,
+                        instructions: wizardData.instructions || undefined,
+                        version: wizardData.version || undefined,
+                        releaseDate: wizardData.releaseDate || undefined
+                    }
 
-            // Step 3: Build prompt
-            await processStep(2, async () => {
-                // Simulate prompt building
-                await new Promise(resolve => setTimeout(resolve, 1000))
-                return { prompt: 'built' }
-            })
-
-            // Step 4: Generate release notes
-            let generationResult = null
-            await processStep(3, async () => {
-                const response = await fetch('/api/release-notes/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        repository: wizardData.repository,
-                        dataSources: wizardData.dataSources,
-                        template: wizardData.template,
-                        instructions: wizardData.instructions,
-                        version: wizardData.version,
-                        releaseDate: wizardData.releaseDate
+                    const response = await fetch('/api/linear/generate-release-notes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
                     })
-                })
-                
-                if (!response.ok) throw new Error('Failed to generate release notes')
-                const result = await response.json()
-                generationResult = result
-                setGeneratedContent(result)
-                return result
-            })
 
-            // Step 5: Finalize
-            await processStep(4, async () => {
-                await new Promise(resolve => setTimeout(resolve, 500))
-                return { finalized: true }
-            })
+                    if (!response.ok) {
+                        const errJson = await response.json().catch(() => ({})) as any
+                        console.error('Linear generation API error:', errJson)
+                        const msg = [errJson?.error, errJson?.details].filter(Boolean).join(' - ')
+                        throw new Error(msg || 'Failed to generate release notes')
+                    }
+
+                    const result = await response.json()
+                    generationResult = result
+                    setGeneratedContent(result)
+                    return result
+                })
+
+                // Finalize
+                await processStep(2, async () => {
+                    await new Promise(resolve => setTimeout(resolve, 500))
+                    return { finalized: true }
+                })
+            } else {
+                // GitHub flow (existing)
+                // Step 1: Fetch repository data
+                await processStep(0, async () => {
+                    const response = await fetch('/api/release-notes/repository-data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            repository: wizardData.repository,
+                            dataSources: wizardData.dataSources
+                        })
+                    })
+                    
+                    if (!response.ok) throw new Error('Failed to fetch repository data')
+                    return await response.json()
+                })
+
+                // Step 2: Process content
+                await processStep(1, async () => {
+                    // Simulate content processing
+                    await new Promise(resolve => setTimeout(resolve, 1500))
+                    return { processed: true }
+                })
+
+                // Step 3: Build prompt
+                await processStep(2, async () => {
+                    // Simulate prompt building
+                    await new Promise(resolve => setTimeout(resolve, 1000))
+                    return { prompt: 'built' }
+                })
+
+                // Step 4: Generate release notes
+                await processStep(3, async () => {
+                    const response = await fetch('/api/release-notes/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            repository: wizardData.repository,
+                            dataSources: wizardData.dataSources,
+                            template: wizardData.template,
+                            instructions: wizardData.instructions,
+                            version: wizardData.version,
+                            releaseDate: wizardData.releaseDate
+                        })
+                    })
+                    
+                    if (!response.ok) throw new Error('Failed to generate release notes')
+                    const result = await response.json()
+                    generationResult = result
+                    setGeneratedContent(result)
+                    return result
+                })
+
+                // Step 5: Finalize
+                await processStep(4, async () => {
+                    await new Promise(resolve => setTimeout(resolve, 500))
+                    return { finalized: true }
+                })
+            }
 
             // Redirect to editor with the draft ID after a brief delay
             setTimeout(() => {
@@ -289,12 +369,12 @@ export default function GenerationProgress({ wizardData }: GenerationProgressPro
                                         if (generatedContent?.draftId) {
                                             router.push(`/dashboard/releases/editor/${generatedContent.draftId}`)
                                         } else {
-                                            router.push('/dashboard/releases/editor?generated=true')
+                                            router.push('/dashboard/releases')
                                         }
                                     }}
                                     icon={<FeatherArrowRight />}
                                 >
-                                    Go to Editor
+                                    {generatedContent?.draftId ? 'Go to Editor' : 'View Releases'}
                                 </Button>
                             </div>
                         )}

@@ -21,10 +21,10 @@ const NavItem = React.forwardRef<HTMLElement, NavItemProps>(function NavItem(
 ) {
   // Add a mapping for nav item text to href
   const navLinks: Record<string, string> = {
-    Features: "/features",
-    Pricing: "/pricing",
-    Docs: "/docs",
-    About: "/about",
+    Features: "#",
+    Pricing: "#",
+    Docs: "#",
+    About: "#",
   };
   const href = navLinks[children as string] || "#";
   return (

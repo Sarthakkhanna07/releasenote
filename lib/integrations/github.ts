@@ -198,6 +198,23 @@ export class GitHubService {
   }
 
   /**
+   * Get a single commit by SHA
+   */
+  async getCommit(owner: string, repo: string, sha: string): Promise<GitHubCommit> {
+    const commit = await this.makeRequest<any>(`/repos/${owner}/${repo}/commits/${sha}`)
+    return {
+      sha: commit.sha,
+      message: commit.commit.message,
+      author: {
+        name: commit.commit.author.name,
+        email: commit.commit.author.email,
+        date: commit.commit.author.date,
+      },
+      url: commit.html_url,
+    }
+  }
+
+  /**
    * Get issues from a repository
    */
   async getIssues(

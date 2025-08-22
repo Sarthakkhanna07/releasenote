@@ -10,6 +10,16 @@ import { TextField } from "@/components/subframe-ui/ui/components/TextField"
 import { FeatherSave, FeatherEye, FeatherArrowLeft, FeatherZap, FeatherCheck } from "@subframe/core"
 import Link from "next/link"
 
+// Convert HTML to Markdown for Source tab consistency
+function convertHTMLToMarkdown(html: string): string {
+    if (!html) return ''
+    // Very simple HTML -> markdown fallback
+    const temp = document.createElement('div')
+    temp.innerHTML = html
+    const text = temp.textContent || temp.innerText || ''
+    return text
+}
+
 // Enhanced markdown to HTML converter for TipTap
 function convertMarkdownToHTML(markdown: string): string {
     if (!markdown) return ''
@@ -143,9 +153,15 @@ function ReleaseNotesEditorContent() {
                         // Convert markdown to HTML for TipTap editor
                         let editorContent = ''
                         
-                        // Priority: content_html > converted markdown > raw content
-                        if (releaseNote.content_html) {
-                            editorContent = releaseNote.content_html
+                        // Priority: valid HTML > converted markdown > raw content
+                        const hasHtml = (s: string) => /<[^>]+>/.test(s)
+                        if (releaseNote.content_html && releaseNote.content_html.trim() !== '') {
+                            if (hasHtml(releaseNote.content_html)) {
+                                editorContent = releaseNote.content_html
+                            } else {
+                                // content_html actually contains markdown; convert to HTML
+                                editorContent = convertMarkdownToHTML(releaseNote.content_html)
+                            }
                         } else if (releaseNote.content_markdown) {
                             editorContent = convertMarkdownToHTML(releaseNote.content_markdown)
                         } else if (releaseNote.content) {
@@ -161,8 +177,17 @@ function ReleaseNotesEditorContent() {
                         
                         // Set content immediately - TipTap should handle HTML properly
                         setContent(editorContent)
-                        // Store raw markdown for source view
-                        setRawContent(releaseNote.content_markdown || releaseNote.content || '')
+                        // Store raw markdown for Source tab
+                        if (releaseNote.content_html && releaseNote.content_html.trim() !== '') {
+                            if (hasHtml(releaseNote.content_html)) {
+                                setRawContent(convertHTMLToMarkdown(releaseNote.content_html))
+                            } else {
+                                // content_html had markdown
+                                setRawContent(releaseNote.content_html)
+                            }
+                        } else {
+                            setRawContent(releaseNote.content_markdown || releaseNote.content || '')
+                        }
                         setVersion(releaseNote.version || '')
                     } else {
                         const errorData = await response.json()

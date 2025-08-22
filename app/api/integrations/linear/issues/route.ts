@@ -23,17 +23,24 @@ export async function GET(request: NextRequest) {
     // Get Linear integration
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('*')
+      .select('encrypted_credentials')
       .eq('organization_id', session.user.id)
       .eq('type', 'linear')
-      .single()
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-    if (integrationError || !integration) {
+    if (integrationError || !integration?.encrypted_credentials) {
       return NextResponse.json({ error: 'Linear integration not found' }, { status: 404 })
     }
 
+    const accessToken = (integration.encrypted_credentials as any)?.access_token
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Linear access token missing' }, { status: 400 })
+    }
+
     try {
-      const issues = await linearAPI.getIssues(integration.access_token, {
+      const issues = await linearAPI.getIssues(accessToken, {
         first,
         after,
         teamId: teamId || undefined,

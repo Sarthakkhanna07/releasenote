@@ -105,33 +105,65 @@ export async function GET(request: NextRequest) {
       console.error('Failed to fetch Linear user info:', error)
     }
 
-    // Save integration to database
-    const { error: integrationError } = await supabase
-      .from('integrations')
-      .upsert({
-        organization_id: session.user.id,
-        type: 'linear',
-        provider_user_id: linearUser?.id || tokenData.access_token.substring(0, 20),
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        expires_at: tokenData.expires_in 
-          ? new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString()
-          : null,
-        metadata: {
-          user: linearUser,
-          organization: linearUser?.organization,
-          scopes: tokenData.scope?.split(' ') || ['read'],
-          token_type: tokenData.token_type
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'organization_id,type'
-      })
+    // Save integration to database (be tolerant to schema differences)
+    const nowIso = new Date().toISOString()
+    const encrypted_credentials = {
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      expires_at: tokenData.expires_in ? new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString() : null,
+      scope: tokenData.scope,
+      token_type: tokenData.token_type
+    }
+
+    const baseRecord: any = {
+      organization_id: session.user.id,
+      type: 'linear',
+      external_id: linearUser?.organization?.id || linearUser?.id || 'unknown',
+      encrypted_credentials,
+      config: {
+        status: 'connected',
+        provider_user_id: linearUser?.id || null,
+        provider_org: linearUser?.organization || null,
+        scopes: tokenData.scope?.split(' ') || ['read']
+      },
+      created_at: nowIso,
+      updated_at: nowIso
+    }
+
+    // Try upsert first (requires unique constraint on organization_id,type). If that fails, try insert/update fallback.
+    let integrationError: any = null
+    try {
+      const { error } = await supabase
+        .from('integrations')
+        .upsert(baseRecord, { onConflict: 'organization_id,type,external_id' })
+      integrationError = error
+    } catch (e) {
+      integrationError = e
+    }
 
     if (integrationError) {
-      console.error('Failed to save Linear integration:', integrationError)
-      return NextResponse.redirect(new URL('/dashboard/integrations?error=save_failed', request.url))
+      console.warn('Linear upsert failed, attempting insert/update fallback:', integrationError)
+      // Attempt raw insert
+      const { error: insertError } = await supabase
+        .from('integrations')
+        .insert([baseRecord])
+      if (insertError) {
+        // If duplicate, try update existing row
+        const { error: updateError } = await supabase
+          .from('integrations')
+          .update({
+            encrypted_credentials: baseRecord.encrypted_credentials,
+            config: baseRecord.config,
+            updated_at: nowIso
+          })
+          .eq('organization_id', session.user.id)
+          .eq('type', 'linear')
+          .eq('external_id', baseRecord.external_id)
+        if (updateError) {
+          console.error('Failed to save Linear integration (update fallback):', updateError)
+          return NextResponse.redirect(new URL(`/dashboard/integrations?error=save_failed&details=${encodeURIComponent(updateError.message || 'update_failed')}`, request.url))
+        }
+      }
     }
 
     // Clean up used state

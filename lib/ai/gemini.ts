@@ -9,7 +9,7 @@ interface CommitData {
   sha?: string;
 }
 
-class GeminiProvider implements AiProvider {
+export class GeminiProvider implements AiProvider {
   private apiKey: string;
 
   constructor() {
@@ -20,7 +20,15 @@ class GeminiProvider implements AiProvider {
   }
 
   private async callGemini(messages: { role: string; content: string }[], maxTokens = 2000, temperature = 0.7): Promise<string> {
-    const response = await axios.post(
+    type GeminiResponse = {
+      candidates?: Array<{
+        content?: {
+          parts?: Array<{ text?: string }>
+        }
+      }>
+    };
+
+    const response = await axios.post<GeminiResponse>(
       `${GEMINI_API_URL}?key=${this.apiKey}`,
       {
         contents: [
@@ -34,11 +42,12 @@ class GeminiProvider implements AiProvider {
         },
       }
     );
-    const candidates = response.data.candidates;
-    if (!candidates || !candidates[0]?.content?.parts?.[0]?.text) {
+    const candidates = response.data?.candidates;
+    const text = candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
       throw new Error('No response generated from Gemini');
     }
-    return candidates[0].content.parts[0].text;
+    return text;
   }
 
   async generateText(
@@ -119,11 +128,22 @@ class GeminiProvider implements AiProvider {
       temperature?: number;
     }
   ): Promise<string> {
-    const systemPrompt = `You are an expert content writer. Generate high-quality content based on the user's prompt.\n\nTone: ${options?.tone || 'professional'}\nTemplate: ${options?.template || 'traditional'}\n\nProvide well-structured, engaging content that matches the requested tone and style.`;
+    const systemPrompt = `You are an expert content writer. Generate high-quality content based on the user's prompt.\\n\\nTone: ${options?.tone || 'professional'}\\nTemplate: ${options?.template || 'traditional'}\\n\\nProvide well-structured, engaging content that matches the requested tone and style.`;
     return this.generateText(prompt, {
       systemPrompt,
       maxTokens: options?.maxTokens || 2500,
       temperature: options?.temperature || 0.4,
+    });
+  }
+
+  async generateFromPrompts(
+    prompts: { systemPrompt: string; userPrompt: string },
+    options?: { maxTokens?: number; temperature?: number }
+  ): Promise<string> {
+    return this.generateText(prompts.userPrompt, {
+      systemPrompt: prompts.systemPrompt,
+      maxTokens: options?.maxTokens || 3000,
+      temperature: options?.temperature || 0.3,
     });
   }
 

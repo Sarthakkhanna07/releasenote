@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React from "react"
 import { useRouter } from "next/navigation"
 import { DefaultPageLayout } from "@/components/subframe-ui/ui/layouts/DefaultPageLayout"
 import { Button } from "@/components/subframe-ui/ui/components/Button"
@@ -8,126 +8,108 @@ import { Badge } from "@/components/subframe-ui/ui/components/Badge"
 import { IconButton } from "@/components/subframe-ui/ui/components/IconButton"
 import { 
   FeatherArrowLeft, 
-  FeatherArrowRight, 
+  FeatherZap,
+  FeatherGithub,
+  FeatherLayout,
   FeatherCheck, 
-  FeatherZap, 
-  FeatherGitBranch, 
-  FeatherMessageSquare, 
-  FeatherSettings, 
-  FeatherWand2 
+  FeatherArrowRight
 } from "@subframe/core"
 import Link from "next/link"
 
-// Import the step components (we'll create these)
-import RepositorySelector from "@/components/release-notes/create/RepositorySelector"
-import DataSourceSelector from "@/components/release-notes/create/DataSourceSelector"
-import TemplateSelector from "@/components/release-notes/create/TemplateSelector"
-import AdditionalInstructions from "@/components/release-notes/create/AdditionalInstructions"
-import GenerationProgress from "@/components/release-notes/create/GenerationProgress"
-
-interface WizardStep {
-    id: string
-    title: string
+interface Platform {
+  id: "github" | "linear"
+  name: string
+  icon: React.ComponentType<any>
     description: string
-    icon: any
-    component: React.ComponentType<any>
+  features: string[]
+  status: "connected" | "not_connected" | "checking"
+  route: string
 }
 
-export default function AICreationPage() {
+export default function PlatformSelectionPage() {
     const router = useRouter()
-    const [currentStep, setCurrentStep] = useState(0)
-    const [wizardData, setWizardData] = useState({
-        repository: null,
-        dataSources: null,
-        template: null,
-        instructions: '',
-        isGenerating: false
-    })
-
-    const steps: WizardStep[] = [
-        {
-            id: 'repository',
-            title: 'Select Repository',
-            description: 'Choose the repository for your release notes',
-            icon: FeatherGitBranch,
-            component: RepositorySelector
-        },
-        {
-            id: 'datasource',
-            title: 'Choose Data Sources',
-            description: 'Select what to analyze for your release notes',
-            icon: FeatherMessageSquare,
-            component: DataSourceSelector
-        },
-        {
-            id: 'template',
-            title: 'Select Template',
-            description: 'Choose a template or let AI decide the structure',
-            icon: FeatherSettings,
-            component: TemplateSelector
-        },
-        {
-            id: 'instructions',
-            title: 'Additional Instructions',
-            description: 'Add any specific requirements or context',
-            icon: FeatherWand2,
-            component: AdditionalInstructions
-        }
-    ]
-
-    const progress = ((currentStep + 1) / steps.length) * 100
-
-    const handleNext = () => {
-        if (currentStep < steps.length - 1) {
-            setCurrentStep(currentStep + 1)
-        } else {
-            // Start generation
-            handleGeneration()
-        }
+  const [platforms, setPlatforms] = React.useState<Platform[]>([
+    {
+      id: "github",
+      name: "GitHub",
+      icon: FeatherGithub,
+      description: "Generate from commits, pull requests, and issues",
+      features: [
+        "Commit analysis",
+        "PR tracking",
+        "Issue management",
+        "Repository insights"
+      ],
+      status: "checking",
+      route: "/dashboard/releases/new/ai/github"
+    },
+    {
+      id: "linear",
+      name: "Linear",
+      icon: FeatherLayout,
+      description: "Generate from teams, projects, and development workflow",
+      features: [
+        "Team-based organization",
+        "Project milestones",
+        "Issue tracking",
+        "Workflow insights"
+      ],
+      status: "checking",
+      route: "/dashboard/releases/new/ai/linear"
     }
+  ])
 
-    const handleBack = () => {
-        if (currentStep > 0) {
-            setCurrentStep(currentStep - 1)
-        }
+  React.useEffect(() => {
+    checkPlatformStatus()
+  }, [])
+
+  const checkPlatformStatus = async () => {
+    // GitHub status
+    try {
+      const gh = await fetch("/api/integrations/github/repositories")
+      updatePlatformStatus("github", gh.ok ? "connected" : "not_connected")
+    } catch {
+      updatePlatformStatus("github", "not_connected")
     }
-
-    const handleGeneration = async () => {
-        setWizardData(prev => ({ ...prev, isGenerating: true }))
-        // TODO: Implement AI generation logic
-        // This will call the generation API and redirect to editor
+    // Linear status (lightweight DB check to avoid rate limits)
+    try {
+      const ln = await fetch("/api/integrations/linear/status")
+      const data = ln.ok ? await ln.json() : { connected: false }
+      updatePlatformStatus("linear", data.connected ? "connected" : "not_connected")
+    } catch {
+      updatePlatformStatus("linear", "not_connected")
     }
+  }
 
-    const updateWizardData = (stepData: any) => {
-        setWizardData(prev => ({ ...prev, ...stepData }))
+  const updatePlatformStatus = (
+    platformId: string,
+    status: "connected" | "not_connected" | "checking"
+  ) => {
+    setPlatforms(prev => prev.map(p => (p.id === platformId ? { ...p, status } : p)))
+  }
+
+  const handlePlatformSelect = (platform: Platform) => {
+    if (platform.status === "connected") {
+      router.push(platform.route)
+    } else {
+      router.push(`/dashboard/integrations?platform=${platform.id}`)
     }
+  }
 
-    const isStepComplete = (stepIndex: number) => {
-        const step = steps[stepIndex]
-        switch (step.id) {
-            case 'repository':
-                return wizardData.repository !== null
-            case 'datasource':
-                return wizardData.dataSources !== null
-            case 'template':
-                return wizardData.template !== null || wizardData.template === 'ai-decide'
-            case 'instructions':
-                return true // Optional step
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "connected":
+        return <Badge variant="success" icon={<FeatherCheck />}>Connected</Badge>
+      case "not_connected":
+        return <Badge variant="warning">Not Connected</Badge>
             default:
-                return false
-        }
+        return <Badge variant="neutral">Checking...</Badge>
     }
-
-    const canProceed = isStepComplete(currentStep)
-
-    if (wizardData.isGenerating) {
-        return <GenerationProgress wizardData={wizardData} />
-    }
+  }
 
     return (
         <DefaultPageLayout>
             <div className="flex h-full w-full flex-col items-start">
-                {/* Header */}
                 <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border px-8 py-6">
                     <div className="flex items-center gap-4">
                         <Link href="/dashboard/releases/start">
@@ -140,115 +122,78 @@ export default function AICreationPage() {
                         <div className="flex flex-col items-start gap-1">
                             <div className="flex items-center gap-2">
                                 <FeatherZap className="text-brand-600" />
-                                <span className="text-2xl font-bold text-default-font">
-                                    AI Release Notes Wizard
-                                </span>
+                <span className="text-2xl font-bold text-default-font">Choose Your Platform</span>
                             </div>
                             <span className="text-base text-neutral-500">
-                                Step {currentStep + 1} of {steps.length}: {steps[currentStep].description}
+                Select the platform you want to generate release notes from
                             </span>
                         </div>
                     </div>
-                    
-                    <Badge variant="brand">
-                        {Math.round(progress)}% Complete
-                    </Badge>
                 </div>
 
-                <div className="flex w-full grow shrink-0 basis-0 flex-col items-start bg-default-background">
-                    {/* Progress Bar */}
-                    <div className="w-full bg-neutral-100">
-                        <div 
-                            className="h-1 bg-brand-600 transition-all duration-300 ease-out"
-                            style={{ width: `${progress}%` }}
-                        />
+        <div className="flex w-full grow shrink-0 basis-0 flex-col items-center gap-16 bg-default-background px-6 py-16">
+          <div className="flex w-full max-w-[1024px] flex-col items-center gap-8">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <span className="text-2xl font-bold text-brand-600">Select Your Data Source</span>
+              <span className="text-lg text-neutral-500">
+                Choose the platform that contains your development data
+              </span>
                     </div>
 
-                    {/* Step Indicators */}
-                    <div className="w-full px-8 py-6 border-b border-solid border-neutral-border">
-                        <div className="flex items-center justify-between max-w-4xl mx-auto">
-                            {steps.map((step, index) => (
-                                <div key={step.id} className="flex items-center">
-                                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${
-                                        index < currentStep 
-                                            ? 'bg-green-500 border-green-500 text-white' 
-                                            : index === currentStep
-                                            ? 'bg-brand-600 border-brand-600 text-white'
-                                            : 'bg-white border-neutral-200 text-neutral-400'
-                                    }`}>
-                                        {index < currentStep ? (
-                                            <FeatherCheck className="w-5 h-5" />
-                                        ) : (
-                                            <step.icon className="w-5 h-5" />
-                                        )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+              {platforms.map(platform => {
+                const Icon = platform.icon
+                const isConnected = platform.status === "connected"
+                return (
+                  <div
+                    key={platform.id}
+                    className={`relative p-8 border-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                      isConnected
+                        ? "border-brand-600 bg-brand-50 hover:border-brand-700 hover:bg-brand-100"
+                        : "border-neutral-200 bg-neutral-50 hover:border-neutral-300"
+                    }`}
+                    onClick={() => handlePlatformSelect(platform)}
+                  >
+                    <div className="absolute top-4 right-4">{getStatusBadge(platform.status)}</div>
+                    <div className="flex items-center gap-4 mb-6">
+                      <div
+                        className={`p-3 rounded-lg ${
+                          isConnected ? "bg-brand-600 text-white" : "bg-neutral-200 text-neutral-600"
+                        }`}
+                      >
+                        <Icon className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-default-font">{platform.name}</h3>
+                        <p className="text-neutral-600">{platform.description}</p>
+                      </div>
                                     </div>
-                                    
-                                    {index < steps.length - 1 && (
-                                        <div className={`w-16 h-0.5 mx-2 transition-all duration-300 ${
-                                            index < currentStep ? 'bg-green-500' : 'bg-neutral-200'
-                                        }`} />
-                                    )}
+                    <div className="space-y-3 mb-6">
+                      {platform.features.map((f, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            isConnected ? "bg-brand-600" : "bg-neutral-400"
+                          }`}></div>
+                          <span className="text-neutral-700">{f}</span>
                                 </div>
                             ))}
                         </div>
-                    </div>
-
-                    {/* Step Content */}
-                    <div className="container max-w-none flex w-full grow shrink-0 basis-0 flex-col items-start gap-8 py-12 overflow-auto">
-                        <div className="w-full max-w-4xl mx-auto">
-                            <div className="bg-white rounded-xl border border-neutral-200 p-8">
-                                <div className="mb-6">
-                                    <h2 className="text-2xl font-bold text-default-font mb-2">
-                                        {steps[currentStep].title}
-                                    </h2>
-                                    <p className="text-neutral-500">
-                                        {steps[currentStep].description}
-                                    </p>
-                                </div>
-
-                                {(() => {
-                                    const StepComponent = steps[currentStep].component
-                                    return (
-                                        <StepComponent
-                                            data={wizardData}
-                                            onUpdate={updateWizardData}
-                                        />
-                                    )
-                                })()}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Navigation */}
-                    <div className="w-full border-t border-solid border-neutral-border px-8 py-6">
-                        <div className="flex items-center justify-between max-w-4xl mx-auto">
                             <Button
-                                variant="neutral-tertiary"
-                                onClick={handleBack}
-                                disabled={currentStep === 0}
-                                icon={<FeatherArrowLeft />}
-                            >
-                                Back
+                      className={`w-full ${
+                        isConnected ? "bg-brand-600 hover:bg-brand-700" : "bg-neutral-600 hover:bg-neutral-700"
+                      }`}
+                      icon={<FeatherArrowRight />}
+                      disabled={platform.status === "checking"}
+                    >
+                      {isConnected ? `Continue with ${platform.name}` : `Connect ${platform.name}`}
                             </Button>
-
-                            <div className="flex items-center gap-2 text-sm text-neutral-500">
-                                {canProceed ? (
-                                    <div className="flex items-center gap-2 text-green-600">
-                                        <FeatherCheck className="w-4 h-4" />
-                                        Ready to proceed
                                     </div>
-                                ) : (
-                                    <span>Complete this step to continue</span>
-                                )}
+                )
+              })}
                             </div>
 
-                            <Button
-                                onClick={handleNext}
-                                disabled={!canProceed}
-                                icon={currentStep === steps.length - 1 ? <FeatherZap /> : <FeatherArrowRight />}
-                            >
-                                {currentStep === steps.length - 1 ? 'Generate Release Notes' : 'Next'}
-                            </Button>
+            <div className="text-center text-neutral-500 max-w-2xl">
+              <p>Don't see your platform? Contact us to add support for your preferred development tools.</p>
                         </div>
                     </div>
                 </div>

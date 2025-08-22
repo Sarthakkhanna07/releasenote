@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { linearAPI } from '@/lib/integrations/linear-client'
+import { linearAPI, LinearAPIError } from '@/lib/integrations/linear-client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,15 +12,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { accessToken: bodyAccessToken } = await request.json()
+
     // Get Linear integration
-    const { data: integration, error: integrationError } = await supabase
+    // Attempt to locate the Linear integration. Prefer organization match; fall back to user or latest.
+    let { data: integration, error: integrationError } = await supabase
       .from('integrations')
       .select('*')
       .eq('organization_id', session.user.id)
       .eq('type', 'linear')
-      .single()
+      .maybeSingle()
 
-    if (integrationError || !integration) {
+    if (!integration || integrationError) {
+      // Fallback: try by user_id
+      const { data: byUser } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('type', 'linear')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      integration = byUser || integration
+    }
+
+    if (!integration) {
       return NextResponse.json({
         success: false,
         error: 'Linear integration not found',
@@ -32,12 +48,7 @@ export async function POST(request: NextRequest) {
     let overallSuccess = true
 
     // Handle both old and new credential structures
-    let accessToken: string | undefined
-    if (integration.encrypted_credentials?.access_token) {
-      accessToken = integration.encrypted_credentials.access_token
-    } else if (integration.access_token) {
-      accessToken = integration.access_token
-    }
+    let accessToken: string | undefined = bodyAccessToken || integration.encrypted_credentials?.access_token || integration.access_token
 
     if (!accessToken) {
       return NextResponse.json({
@@ -82,8 +93,17 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       overallSuccess = false
+      if (error instanceof LinearAPIError && error.status === 429) {
+        const retryAfter = (error.data as any)?.retryAfter
+        return NextResponse.json({
+          success: false,
+          error: 'Rate limit exceeded',
+          message: `Too many requests. Please try again in ${retryAfter || 'a few'} seconds.`,
+          tests: [],
+        }, { status: 429 })
+      }
       tests.push({
-        name: 'Authentication & User Info',
+        name: 'Authentication \u0026 User Info',
         status: 'failed',
         message: 'Network error during authentication test',
         error: error instanceof Error ? error.message : 'Unknown error'
